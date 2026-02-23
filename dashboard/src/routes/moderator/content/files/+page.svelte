@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { listMyFiles, removeFile, updateFile, listMyMainSections, listMySubSections, listMySecondarySections } from '$lib/api/moderator.js';
 	import { createFileUploader, createResumeUploader, formatFileSize, mimeToContentType } from '$lib/utils/fileUpload.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	// List state
 	let items = $state([]);
@@ -10,6 +11,7 @@
 	let searchQuery = $state('');
 	let filterMainSection = $state('');
 	let filterContentType = $state('');
+	let filterIsListed = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 
@@ -20,7 +22,7 @@
 	// Upload modal
 	let showUploadModal = $state(false);
 	let uploadFile = $state(null);
-	let uploadForm = $state({ title: '', description: '', main_section: '', subsection: '', secondary_subsection: '' });
+	let uploadForm = $state({ title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
 	let uploadThumbnail = $state(null);
 	let uploadThumbnailPreview = $state('');
 	let uploadFormError = $state('');
@@ -35,7 +37,7 @@
 	// Edit modal
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ title: '', description: '' });
+	let editForm = $state({ title: '', description: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -67,8 +69,11 @@
 		isLoading = true; error = '';
 		try {
 			const data = await listMyFiles({
-				search: searchQuery, main_section: filterMainSection || undefined,
-				content_type: filterContentType || undefined, page: currentPage
+				search: searchQuery,
+				main_section: filterMainSection || undefined,
+				content_type: filterContentType || undefined,
+				metadata__is_listed: filterIsListed === '' ? undefined : filterIsListed === 'true',
+				page: currentPage
 			});
 			items = data.results; totalCount = data.count;
 		} catch (err) { error = err.message; }
@@ -95,7 +100,7 @@
 
 	// ─── Upload Modal ───────────────────────────────────
 	function openUploadModal() {
-		uploadFile = null; uploadForm = { title: '', description: '', main_section: '', subsection: '', secondary_subsection: '' };
+		uploadFile = null; uploadForm = { title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
 		uploadThumbnail = null; uploadThumbnailPreview = ''; uploadFormError = '';
 		uploadSubOptions = []; uploadSecondaryOptions = [];
 		uploadStatus = ''; uploadProgress = 0; currentUploader = null;
@@ -137,7 +142,8 @@
 			title: uploadForm.title,
 			description: uploadForm.description || undefined,
 			subsection: Number(uploadForm.subsection),
-			content_type: contentType
+			content_type: contentType,
+			is_listed: uploadForm.is_listed
 		};
 		if (uploadForm.secondary_subsection) metadata.secondary_subsection = Number(uploadForm.secondary_subsection);
 
@@ -162,7 +168,7 @@
 	// ─── Edit ───────────────────────────────────────────
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '' };
+		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -170,7 +176,7 @@
 		editFormError = ''; editFormLoading = true;
 		try {
 			await updateFile(editingItem.id, {
-				metadata: { title: editForm.title, description: editForm.description || undefined }
+				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -253,50 +259,55 @@
 	}
 </script>
 
-<svelte:head><title>File Uploads — Nebras</title></svelte:head>
+<svelte:head><title>{t('content.title')} — Nebras</title></svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<div><h1 class="page-title">My Content</h1><p class="page-desc">Manage your YouTube videos and file uploads</p></div>
+		<div><h1 class="page-title">{t('content.my_content')}</h1><p class="page-desc">{t('content.my_content_desc')}</p></div>
 		<button class="btn btn-primary" onclick={openUploadModal}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M12 5v14m-7-7h14" /></svg>
-			Upload File
+			{t('content.upload_file')}
 		</button>
 	</div>
 
 	<div class="tabs">
-		<a href="/moderator/content/youtube" class="tab">YouTube Videos</a>
-		<a href="/moderator/content/files" class="tab active">File Uploads</a>
+		<a href="/moderator/content/youtube" class="tab">{t('content.youtube_videos')}</a>
+		<a href="/moderator/content/files" class="tab active">{t('content.file_uploads')}</a>
 	</div>
 
 	<div class="toolbar">
 		<div class="search-box">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-			<input type="text" placeholder="Search files..." bind:value={searchQuery} oninput={handleSearch} class="search-input" />
+			<input type="text" placeholder={t('content.search_files')} bind:value={searchQuery} oninput={handleSearch} class="search-input" />
 		</div>
 		<select class="filter-select" bind:value={filterContentType} onchange={handleFilterChange}>
-			<option value="">All Types</option>
-			<option value="video">Video</option>
-			<option value="audio">Audio</option>
-			<option value="document">Document</option>
+			<option value="">{t('content.all_types')}</option>
+			<option value="video">{t('content.video')}</option>
+			<option value="audio">{t('content.audio')}</option>
+			<option value="document">{t('content.document')}</option>
 		</select>
 		<select class="filter-select" bind:value={filterMainSection} onchange={handleFilterChange}>
-			<option value="">All Sections</option>
+			<option value="">{t('content.all_sections')}</option>
 			{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 		</select>
-		<div class="count-badge">{totalCount} files</div>
+		<select class="filter-select" bind:value={filterIsListed} onchange={handleFilterChange}>
+			<option value="">{t('common.all')} ({t('common.is_listed')})</option>
+			<option value="true">{t('common.listed')}</option>
+			<option value="false">{t('common.unlisted')}</option>
+		</select>
+		<div class="count-badge">{totalCount} {t('common.total')}</div>
 	</div>
 
 	{#if error}<div class="alert alert-error">{error}</div>{/if}
 
 	<div class="content-container">
 		{#if isLoading}
-			<div class="state-box"><div class="spinner"></div><span>Loading...</span></div>
+			<div class="state-box"><div class="spinner"></div><span>{t('common.loading')}</span></div>
 		{:else if items.length === 0}
 			<div class="state-box empty-state">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" /></svg>
-				<p>No files uploaded yet</p>
-				<button class="btn btn-primary btn-sm" onclick={openUploadModal}>Upload your first file</button>
+				<p>{t('content.no_files_uploaded')}</p>
+				<button class="btn btn-primary btn-sm" onclick={openUploadModal}>{t('content.upload_first_file')}</button>
 			</div>
 		{:else}
 			<div class="file-list">
@@ -305,7 +316,9 @@
 						<div class="file-icon">{contentTypeIcon(item.metadata?.content_type)}</div>
 						<div class="file-info">
 							<span class="file-name">{item.metadata?.title || item.filename || 'Untitled'}</span>
-							<span class="file-meta">{item.file_type} · {formatFileSize(item.file_size)}</span>
+							<span class="file-meta" style="color: {item.metadata?.is_listed === false ? 'var(--color-danger-400)' : 'inherit'};">
+								{item.metadata?.is_listed === false ? t('common.unlisted') : `${item.file_type} · ${formatFileSize(item.file_size)}`}
+							</span>
 						</div>
 						<span class="file-status {statusColor(item.upload_status)}">{item.upload_status}</span>
 						<span class="file-date">{formatDate(item.metadata?.created_at)}</span>
@@ -325,7 +338,7 @@
 
 	{#if totalPages > 1}
 		<div class="pagination">
-			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← Prev</button>
+			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← {t('common.previous')}</button>
 			<div class="page-numbers">
 				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
 					{#if p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)}
@@ -335,7 +348,7 @@
 					{/if}
 				{/each}
 			</div>
-			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>Next →</button>
+			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>{t('common.next')} →</button>
 		</div>
 	{/if}
 </div>
@@ -346,7 +359,7 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget && !uploadStatus) showUploadModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Upload File</h2>
+				<h2 class="modal-title">{t('content.upload_file')}</h2>
 				{#if !uploadStatus}<button class="modal-close" onclick={() => (showUploadModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>{/if}
@@ -359,18 +372,18 @@
 					<div class="progress-bar-track"><div class="progress-bar-fill" style="width:{uploadProgress}%"></div></div>
 					<div class="progress-info">
 						<span class="progress-pct">{uploadProgress}%</span>
-						<span class="progress-status">{uploadStatus === 'initiating' ? 'Preparing...' : uploadStatus === 'uploading' ? 'Uploading...' : uploadStatus === 'completing' ? 'Finalizing...' : uploadStatus === 'completed' ? '✓ Complete!' : '✕ Failed'}</span>
+						<span class="progress-status">{uploadStatus === 'initiating' ? t('content.preparing') : uploadStatus === 'uploading' ? t('content.uploading') : uploadStatus === 'completing' ? t('content.finalizing') : uploadStatus === 'completed' ? t('content.complete') : t('content.failed')}</span>
 					</div>
 					{#if uploadFormError}<div class="alert alert-error" style="margin-top:0.75rem">{uploadFormError}</div>{/if}
 					{#if uploadStatus === 'completed'}
-						<button class="btn btn-primary" style="margin-top:1rem;align-self:center" onclick={() => { showUploadModal = false; fetchItems(); }}>Done</button>
+						<button class="btn btn-primary" style="margin-top:1rem;align-self:center" onclick={() => { showUploadModal = false; fetchItems(); }}>{t('common.done')}</button>
 					{:else if uploadStatus === 'failed'}
 						<div class="modal-actions" style="margin-top:1rem">
-							<button class="btn btn-secondary" onclick={cancelUpload}>Close</button>
-							<button class="btn btn-primary" onclick={() => { uploadStatus = ''; uploadProgress = 0; uploadFormError = ''; }}>Retry</button>
+							<button class="btn btn-secondary" onclick={cancelUpload}>{t('common.close')}</button>
+							<button class="btn btn-primary" onclick={() => { uploadStatus = ''; uploadProgress = 0; uploadFormError = ''; }}>{t('common.retry')}</button>
 						</div>
 					{:else}
-						<button class="btn btn-secondary" style="margin-top:1rem;align-self:center" onclick={cancelUpload}>Cancel</button>
+						<button class="btn btn-secondary" style="margin-top:1rem;align-self:center" onclick={cancelUpload}>{t('common.cancel')}</button>
 					{/if}
 				</div>
 			{:else}
@@ -379,7 +392,7 @@
 				<div class="modal-form">
 					<!-- File picker -->
 					<div class="form-group">
-						<label class="form-label">File *</label>
+						<label class="form-label">{t('content.file')} *</label>
 						{#if uploadFile}
 							<div class="selected-file">
 								<span class="selected-file-name">{uploadFile.name}</span>
@@ -389,43 +402,52 @@
 						{:else}
 							<label class="upload-zone" for="upload-file">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" /></svg>
-								<span>Click to select a file</span>
-								<span class="upload-hint">Video, Audio, or Document</span>
+								<span>{t('content.click_select')}</span>
+								<span class="upload-hint">{t('content.upload_hint')}</span>
 							</label>
 							<input type="file" id="upload-file" class="file-input-hidden" onchange={handleFileSelect} />
 						{/if}
 					</div>
-					<div class="form-group"><label for="up-title" class="form-label">Title *</label><input type="text" id="up-title" bind:value={uploadForm.title} class="form-input" placeholder="File title" /></div>
-					<div class="form-group"><label for="up-desc" class="form-label">Description</label><textarea id="up-desc" bind:value={uploadForm.description} class="form-input form-textarea" rows="2" placeholder="Optional..."></textarea></div>
+					<div class="form-group"><label for="up-title" class="form-label">{t('common.title')} *</label><input type="text" id="up-title" bind:value={uploadForm.title} class="form-input" placeholder={t('common.title')} /></div>
+					<div class="form-group"><label for="up-desc" class="form-label">{t('content.description')}</label><textarea id="up-desc" bind:value={uploadForm.description} class="form-input form-textarea" rows="2" placeholder={t('common.optional')}></textarea></div>
 					<!-- Section selectors -->
 					<div class="form-group">
-						<label for="up-main" class="form-label">Main Section *</label>
+						<label for="up-main" class="form-label">{t('sections.main_section')} *</label>
 						<select id="up-main" bind:value={uploadForm.main_section} class="form-input" onchange={handleUploadMainChange}>
-							<option value="">Select...</option>
+							<option value="">{t('common.select')}</option>
 							{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 						</select>
 					</div>
 					{#if uploadForm.main_section}
 						<div class="form-group">
-							<label for="up-sub" class="form-label">Sub Section *</label>
+							<label for="up-sub" class="form-label">{t('sections.sub_section')} *</label>
 							<select id="up-sub" bind:value={uploadForm.subsection} class="form-input" onchange={handleUploadSubChange}>
-								<option value="">Select...</option>
+								<option value="">{t('common.select')}</option>
 								{#each uploadSubOptions as ss}<option value={ss.id}>{ss.name}</option>{/each}
 							</select>
 						</div>
 					{/if}
 					{#if uploadForm.subsection && uploadSecondaryOptions.length > 0}
 						<div class="form-group">
-							<label for="up-sec" class="form-label">Secondary</label>
+							<label for="up-sec" class="form-label">{t('sections.secondary')}</label>
 							<select id="up-sec" bind:value={uploadForm.secondary_subsection} class="form-input">
-								<option value="">None</option>
+								<option value="">{t('common.none')}</option>
 								{#each uploadSecondaryOptions as sec}<option value={sec.id}>{sec.name}</option>{/each}
 							</select>
 						</div>
 					{/if}
+					
+					<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+						<label class="toggle-switch">
+							<input type="checkbox" id="upload-listed" bind:checked={uploadForm.is_listed} class="toggle-input" />
+							<span class="toggle-slider"></span>
+							<span class="toggle-label">{t('common.is_listed')}</span>
+						</label>
+					</div>
+
 					<!-- Thumbnail -->
 					<div class="form-group">
-						<label class="form-label">Thumbnail</label>
+						<label class="form-label">{t('content.thumbnail')}</label>
 						{#if uploadThumbnailPreview}
 							<div class="upload-preview">
 								<img src={uploadThumbnailPreview} alt="Preview" class="preview-img" />
@@ -434,15 +456,15 @@
 								</button>
 							</div>
 						{:else}
-							<label class="upload-zone small-zone" for="up-thumb"><span>Add thumbnail</span></label>
+							<label class="upload-zone small-zone" for="up-thumb"><span>{t('content.add_thumb')}</span></label>
 							<input type="file" id="up-thumb" accept="image/*" class="file-input-hidden" onchange={handleUploadThumbChange} />
 						{/if}
 					</div>
 					<div class="modal-actions">
-						<button class="btn btn-secondary" onclick={() => (showUploadModal = false)}>Cancel</button>
+						<button class="btn btn-secondary" onclick={() => (showUploadModal = false)}>{t('common.cancel')}</button>
 						<button class="btn btn-primary" onclick={startUpload}>
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-							Start Upload
+							{t('content.start_upload')}
 						</button>
 					</div>
 				</div>
@@ -456,20 +478,21 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">File Details</h2><button class="modal-close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.file_details')}</h2><button class="modal-close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="detail-content">
 				{#if detailItem.metadata?.thumbnail}
 					<img src={detailItem.metadata.thumbnail} alt="" class="detail-thumb" />
 				{/if}
 				<div class="detail-fields">
-					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
-					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
-					<div class="detail-row"><span class="detail-label">File</span><span class="detail-value">{detailItem.filename}</span></div>
-					<div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">{detailItem.file_type}</span></div>
-					<div class="detail-row"><span class="detail-label">Size</span><span class="detail-value">{formatFileSize(detailItem.file_size)}</span></div>
-					<div class="detail-row"><span class="detail-label">Upload</span><span class="detail-value">{detailItem.upload_type} — {detailItem.upload_status}</span></div>
-					{#if detailItem.file_url}<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a href={detailItem.file_url} target="_blank" rel="noopener" class="link">Open file</a></span></div>{/if}
-					<div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.file')}</span><span class="detail-value">{detailItem.filename}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.type')}</span><span class="detail-value">{detailItem.file_type}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.size')}</span><span class="detail-value">{formatFileSize(detailItem.file_size)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.upload')}</span><span class="detail-value">{detailItem.upload_type} — {detailItem.upload_status}</span></div>
+					{#if detailItem.file_url}<div class="detail-row"><span class="detail-label">{t('content.url')}</span><span class="detail-value"><a href={detailItem.file_url} target="_blank" rel="noopener" class="link">{t('content.open_file')}</a></span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>
 			</div>
 		</div>
@@ -481,11 +504,11 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Delete File</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
-			<p class="delete-message">Delete <strong>"{deletingItem.metadata?.title || deletingItem.filename}"</strong>?</p>
+			<div class="modal-header"><h2 class="modal-title">{t('content.delete_file')}</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<p class="delete-message">{t('content.delete_confirm')} <strong>"{deletingItem.metadata?.title || deletingItem.filename}"</strong>?</p>
 			<div class="modal-actions pad-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
-				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}Delete</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
+				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}{t('common.delete')}</button>
 			</div>
 		</div>
 	</div>
@@ -497,7 +520,7 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget && !resumeStatus) showResumeModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Resume Upload</h2>
+				<h2 class="modal-title">{t('content.resume_upload')}</h2>
 				{#if !resumeStatus}<button class="modal-close" onclick={() => (showResumeModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>{/if}
@@ -509,34 +532,34 @@
 					<div class="progress-bar-track"><div class="progress-bar-fill" style="width:{resumeProgress}%"></div></div>
 					<div class="progress-info">
 						<span class="progress-pct">{resumeProgress}%</span>
-						<span class="progress-status">{resumeStatus === 'uploading' ? 'Uploading...' : resumeStatus === 'completing' ? 'Finalizing...' : resumeStatus === 'completed' ? '✓ Complete!' : '✕ Failed'}</span>
+						<span class="progress-status">{resumeStatus === 'uploading' ? t('content.uploading') : resumeStatus === 'completing' ? t('content.finalizing') : resumeStatus === 'completed' ? t('content.complete') : t('content.failed')}</span>
 					</div>
 					{#if resumeError}<div class="alert alert-error" style="margin-top:0.75rem">{resumeError}</div>{/if}
 					{#if resumeStatus === 'completed'}
-						<button class="btn btn-primary" style="margin-top:1rem;align-self:center" onclick={() => { showResumeModal = false; fetchItems(); }}>Done</button>
+						<button class="btn btn-primary" style="margin-top:1rem;align-self:center" onclick={() => { showResumeModal = false; fetchItems(); }}>{t('common.done')}</button>
 					{:else if resumeStatus === 'failed'}
 						<div class="modal-actions" style="margin-top:1rem">
-							<button class="btn btn-secondary" onclick={cancelResume}>Close</button>
-							<button class="btn btn-primary" onclick={() => { resumeStatus = ''; resumeError = ''; }}>Retry</button>
+							<button class="btn btn-secondary" onclick={cancelResume}>{t('common.close')}</button>
+							<button class="btn btn-primary" onclick={() => { resumeStatus = ''; resumeError = ''; }}>{t('common.retry')}</button>
 						</div>
 					{:else}
-						<button class="btn btn-secondary" style="margin-top:1rem;align-self:center" onclick={cancelResume}>Cancel</button>
+						<button class="btn btn-secondary" style="margin-top:1rem;align-self:center" onclick={cancelResume}>{t('common.cancel')}</button>
 					{/if}
 				</div>
 			{:else}
 				<div class="modal-form">
 					<div class="resume-info">
-						<div class="resume-detail"><span class="resume-label">File:</span> <strong>{resumeItem.filename}</strong></div>
-						<div class="resume-detail"><span class="resume-label">Size:</span> {formatFileSize(resumeItem.file_size)}</div>
-						<div class="resume-detail"><span class="resume-label">Type:</span> {resumeItem.upload_type}</div>
+						<div class="resume-detail"><span class="resume-label">{t('content.file')}:</span> <strong>{resumeItem.filename}</strong></div>
+						<div class="resume-detail"><span class="resume-label">{t('content.size')}:</span> {formatFileSize(resumeItem.file_size)}</div>
+						<div class="resume-detail"><span class="resume-label">{t('common.type')}:</span> {resumeItem.upload_type}</div>
 						{#if resumeItem.multipart_uploader}
-							<div class="resume-detail"><span class="resume-label">Progress:</span> {resumeItem.multipart_uploader.uploaded_parts} / {resumeItem.multipart_uploader.total_parts} parts uploaded</div>
+							<div class="resume-detail"><span class="resume-label">{t('content.progress')}:</span> {resumeItem.multipart_uploader.uploaded_parts} / {resumeItem.multipart_uploader.total_parts} {t('content.parts_uploaded')}</div>
 							<div class="progress-bar-track" style="margin-top:0.25rem"><div class="progress-bar-fill" style="width:{resumeProgress}%"></div></div>
 						{/if}
 					</div>
 
 					<div class="form-group">
-						<label class="form-label">Re-select the same file *</label>
+						<label class="form-label">{t('content.reselect_file')} *</label>
 						{#if resumeFile}
 							<div class="selected-file">
 								<span class="selected-file-name">{resumeFile.name}</span>
@@ -546,7 +569,7 @@
 						{:else}
 							<label class="upload-zone" for="resume-file">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round" /></svg>
-								<span>Select the same file to continue</span>
+								<span>{t('content.select_to_continue')}</span>
 							</label>
 							<input type="file" id="resume-file" class="file-input-hidden" onchange={handleResumeFileSelect} />
 						{/if}
@@ -555,10 +578,10 @@
 					{#if resumeError}<div class="alert alert-error">{resumeError}</div>{/if}
 
 					<div class="modal-actions">
-						<button class="btn btn-secondary" onclick={() => (showResumeModal = false)}>Cancel</button>
+						<button class="btn btn-secondary" onclick={() => (showResumeModal = false)}>{t('common.cancel')}</button>
 						<button class="btn btn-primary" onclick={startResume} disabled={!resumeFile}>
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-							Resume Upload
+							{t('content.resume')}
 						</button>
 					</div>
 				</div>
@@ -572,14 +595,21 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Edit File</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.edit_file')}</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
-				<div class="form-group"><label for="edit-title" class="form-label">Title</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
-				<div class="form-group"><label for="edit-desc" class="form-label">Description</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
+				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
+				</div>
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>Cancel</button>
-					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}Save</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>{t('common.cancel')}</button>
+					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}{t('common.save_changes')}</button>
 				</div>
 			</form>
 		</div>

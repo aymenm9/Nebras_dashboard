@@ -7,6 +7,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { listBans, applyBan, liftBan, listModerators } from '$lib/api/admin.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	// ─── State ──────────────────────────────────────────
 	let bans = $state([]);
@@ -180,14 +181,14 @@
 	<!-- Page Header -->
 	<div class="page-header">
 		<div class="header-info">
-			<h1 class="page-title">Ban Management</h1>
-			<p class="page-desc">Temporarily block moderators without deleting their accounts</p>
+			<h1 class="page-title">{t('bans.title')}</h1>
+			<p class="page-desc">{t('bans.desc')}</p>
 		</div>
 		<button class="btn btn-danger-solid" id="apply-ban-btn" onclick={openBanModal}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
 				<path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
 			</svg>
-			Apply Ban
+			{t('bans.apply_ban')}
 		</button>
 	</div>
 
@@ -197,18 +198,18 @@
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
 				<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 			</svg>
-			<input type="text" placeholder="Search bans..." bind:value={searchQuery}
+			<input type="text" placeholder={t('bans.search')} bind:value={searchQuery}
 				oninput={handleSearch} class="search-input" id="search-bans" />
 		</div>
 
 		<select class="filter-select" bind:value={filterBanned} onchange={handleFilterChange}>
-			<option value="">All Status</option>
-			<option value="true">Currently Banned</option>
-			<option value="false">Lifted</option>
+			<option value="">{t('bans.all_status')}</option>
+			<option value="true">{t('bans.currently_banned')}</option>
+			<option value="false">{t('bans.lifted')}</option>
 		</select>
 
 		<div class="count-badge">
-			{totalCount} total
+			{t('common.total')} {totalCount}
 		</div>
 	</div>
 
@@ -229,18 +230,18 @@
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
 					<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" />
 				</svg>
-				<p>No bans found</p>
+				<p>{t('bans.no_bans')}</p>
 			</div>
 		{:else}
 			<table class="data-table" id="bans-table">
 				<thead>
 					<tr>
-						<th>User</th>
-						<th>Reason</th>
-						<th>Start</th>
-						<th>End</th>
-						<th>Status</th>
-						<th class="th-actions">Actions</th>
+						<th>{t('bans.user')}</th>
+						<th>{t('bans.reason')}</th>
+						<th>{t('bans.start')}</th>
+						<th>{t('bans.end')}</th>
+						<th>{t('common.status')}</th>
+						<th class="th-actions">{t('common.actions')}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -280,7 +281,7 @@
 											{#if liftLoading === ban.id}
 												<span class="spinner-sm"></span>
 											{:else}
-												Lift Ban
+												{t('bans.lift_ban')}
 											{/if}
 										</button>
 									{:else}
@@ -324,11 +325,12 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showBanModal}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showBanModal = false; }}>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" role="dialog" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showBanModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Apply Ban</h2>
-				<button class="modal-close" onclick={() => (showBanModal = false)}>
+				<h2 class="modal-title">{t('bans.apply_ban')}</h2>
+				<button class="modal-close" aria-label="Close" onclick={() => (showBanModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -339,9 +341,9 @@
 
 			<form onsubmit={(e) => { e.preventDefault(); handleApplyBan(); }} class="modal-form">
 				<div class="form-group">
-					<label for="ban-user" class="form-label">User *</label>
+					<label for="ban-user" class="form-label">{t('bans.user')} *</label>
 					<select id="ban-user" bind:value={banForm.user} class="form-select" required>
-						<option value="">Select a moderator...</option>
+						<option value="">{t('bans.select_moderator')}</option>
 						{#each moderatorsList as mod}
 							<option value={mod.id}>@{mod.username} — {mod.first_name} {mod.last_name}</option>
 						{/each}
@@ -349,24 +351,24 @@
 				</div>
 
 				<div class="form-group">
-					<label for="ban-reason" class="form-label">Reason *</label>
-					<textarea id="ban-reason" bind:value={banForm.reason} class="form-textarea" placeholder="Reason for the ban..." rows="3" required></textarea>
+					<label for="ban-reason" class="form-label">{t('bans.reason')} *</label>
+					<textarea id="ban-reason" bind:value={banForm.reason} class="form-textarea" placeholder="{t('bans.reason')}..." rows="3" required></textarea>
 				</div>
 
 				<div class="form-group">
-					<label for="ban-end" class="form-label">Ban End Date *</label>
+					<label for="ban-end" class="form-label">{t('bans.ban_end_date')}</label>
 					<input type="datetime-local" id="ban-end" bind:value={banForm.banned_end} class="form-input" required />
 				</div>
 
 				<div class="modal-actions">
 					<button type="button" class="btn btn-secondary" onclick={() => (showBanModal = false)}>
-						Cancel
+						{t('common.cancel')}
 					</button>
 					<button type="submit" class="btn btn-danger-solid" disabled={banFormLoading}>
 						{#if banFormLoading}
 							<span class="spinner-sm"></span>
 						{/if}
-						Apply Ban
+						{t('bans.apply_ban')}
 					</button>
 				</div>
 			</form>

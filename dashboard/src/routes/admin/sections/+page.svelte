@@ -14,6 +14,7 @@
 		listSecondarySections, patchSecondarySection, deleteSecondarySection,
 		listModerators
 	} from '$lib/api/admin.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	// ─── Level & Parent State ───────────────────────────
 	// 'main' | 'sub' | 'secondary'
@@ -32,13 +33,14 @@
 	let currentPage = $state(1);
 	let searchQuery = $state('');
 	let filterCreatedBy = $state('');
+	let filterIsListed = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 
 	// Edit modal
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ name: '', order_index: 0 });
+	let editForm = $state({ name: '', order_index: 0, is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -58,15 +60,15 @@
 
 	// ─── Level titles ───────────────────────────────────
 	let pageTitle = $derived(
-		activeLevel === 'main' ? 'Main Sections' :
-		activeLevel === 'sub' ? 'Sub Sections' :
-		'Secondary Sub Sections'
+		activeLevel === 'main' ? t('sections.main_sections') :
+		activeLevel === 'sub' ? t('sections.sub_sections') :
+		t('sections.secondary_sections')
 	);
 
 	let pageDesc = $derived(
-		activeLevel === 'main' ? 'Top-level content categories' :
-		activeLevel === 'sub' ? 'Children of main sections' :
-		'Children of sub sections'
+		activeLevel === 'main' ? t('sections.desc') :
+		activeLevel === 'sub' ? t('sections.desc') :
+		t('sections.desc')
 	);
 
 	// ─── Lifecycle ──────────────────────────────────────
@@ -83,7 +85,12 @@
 		error = '';
 		try {
 			let data;
-			const baseParams = { search: searchQuery, page: currentPage, created_by: filterCreatedBy };
+			const baseParams = {
+				search: searchQuery,
+				page: currentPage,
+				created_by: filterCreatedBy,
+				is_listed: filterIsListed === '' ? undefined : filterIsListed === 'true'
+			};
 
 			if (activeLevel === 'main') {
 				data = await listMainSections(baseParams);
@@ -145,6 +152,7 @@
 		// Reset filters & parent selections
 		searchQuery = '';
 		filterCreatedBy = '';
+		filterIsListed = '';
 		filterMainSection = '';
 		filterSubSection = '';
 		currentPage = 1;
@@ -217,7 +225,8 @@
 		editingItem = item;
 		editForm = {
 			name: item.name,
-			order_index: item.order_index ?? 0
+			order_index: item.order_index ?? 0,
+			is_listed: item.is_listed ?? true
 		};
 		editFormError = '';
 		showEditModal = true;
@@ -319,7 +328,7 @@
 	<div class="page-header">
 		<div class="header-info">
 			<div>
-				<h1 class="page-title">Sections</h1>
+				<h1 class="page-title">{t('sections.title')}</h1>
 				<p class="page-desc">{pageDesc}</p>
 			</div>
 		</div>
@@ -332,21 +341,21 @@
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tab-icon">
 				<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
 			</svg>
-			Main
+			{t('sections.main_sections')}
 		</button>
 		<button class="level-tab" class:active={activeLevel === 'sub'}
 			onclick={() => { activeLevel = 'sub'; handleLevelChange(); }}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tab-icon">
 				<path d="M9 5l7 7-7 7" />
 			</svg>
-			Sub
+			{t('sections.sub_sections')}
 		</button>
 		<button class="level-tab" class:active={activeLevel === 'secondary'}
 			onclick={() => { activeLevel = 'secondary'; handleLevelChange(); }}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tab-icon">
 				<path d="M13 5l7 7-7 7M5 5l7 7-7 7" />
 			</svg>
-			Secondary
+			{t('sections.secondary_sections')}
 		</button>
 	</div>
 
@@ -356,14 +365,14 @@
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
 				<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 			</svg>
-			<input type="text" placeholder="Search sections..." bind:value={searchQuery}
+			<input type="text" placeholder={t('sections.search')} bind:value={searchQuery}
 				oninput={handleSearch} class="search-input" id="search-sections" />
 		</div>
 
 		<!-- Parent: Main Section dropdown (visible for sub & secondary) -->
 		{#if activeLevel === 'sub' || activeLevel === 'secondary'}
 			<select class="filter-select" bind:value={filterMainSection} onchange={handleMainSectionFilterChange}>
-				<option value="">All Main Sections</option>
+				<option value="">{t('sections.main_sections')} ({t('content.all_sections')})</option>
 				{#each mainSectionsList as ms}
 					<option value={ms.id}>{ms.name}</option>
 				{/each}
@@ -373,7 +382,7 @@
 		<!-- Parent: Sub Section dropdown (visible for secondary only) -->
 		{#if activeLevel === 'secondary'}
 			<select class="filter-select" bind:value={filterSubSection} onchange={handleSubSectionFilterChange}>
-				<option value="">All Sub Sections</option>
+				<option value="">{t('sections.sub_sections')} ({t('content.all_sections')})</option>
 				{#each subSectionsList as ss}
 					<option value={ss.id}>{ss.name}</option>
 				{/each}
@@ -381,14 +390,20 @@
 		{/if}
 
 		<select class="filter-select" bind:value={filterCreatedBy} onchange={handleFilterChange}>
-			<option value="">All Creators</option>
+			<option value="">{t('content.all_creators')}</option>
 			{#each moderatorsList as mod}
 				<option value={mod.id}>{mod.first_name || mod.username} {mod.last_name || ''}</option>
 			{/each}
 		</select>
 
+		<select class="filter-select" bind:value={filterIsListed} onchange={handleFilterChange}>
+			<option value="">{t('common.all')} ({t('common.is_listed')})</option>
+			<option value="true">{t('common.listed')}</option>
+			<option value="false">{t('common.unlisted')}</option>
+		</select>
+
 		<div class="count-badge">
-			{totalCount} total
+			{t('common.total')} {totalCount}
 		</div>
 	</div>
 
@@ -416,6 +431,8 @@
 				{#each items as item (item.id)}
 					<div class="section-card">
 						<!-- Thumbnail -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div class="card-thumbnail" onclick={() => openDetailModal(item)}>
 							{#if item.thumbnail}
 								<img src={item.thumbnail} alt={item.name} class="thumbnail-img" />
@@ -453,6 +470,9 @@
 										{getCreatorName(item.created_by)}
 									</span>
 								{/if}
+								<span class="meta-item" style="color: {item.is_listed ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">
+									{item.is_listed ? t('common.listed') : t('common.unlisted')}
+								</span>
 								{#if item.main_section}
 									<span class="meta-item meta-parent">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon">
@@ -522,11 +542,12 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showDetailModal && detailItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" role="dialog" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal modal-detail animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">Section Details</h2>
-				<button class="modal-close" onclick={() => (showDetailModal = false)}>
+				<button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -547,12 +568,7 @@
 						<span class="detail-label">Name</span>
 						<span class="detail-value">{detailItem.name}</span>
 					</div>
-					{#if detailItem.order_index !== undefined}
-						<div class="detail-row">
-							<span class="detail-label">Order Index</span>
-							<span class="detail-value">{detailItem.order_index}</span>
-						</div>
-					{/if}
+					<div class="detail-row"><span class="detail-label">{t('sections.order_index')}</span><span class="detail-value">{detailItem.order_index ?? '—'}</span></div>
 					{#if detailItem.main_section}
 						<div class="detail-row">
 							<span class="detail-label">Main Section</span>
@@ -565,16 +581,9 @@
 							<span class="detail-value">{getSubSectionName(detailItem.sub_section)}</span>
 						</div>
 					{/if}
-					{#if detailItem.created_by}
-						<div class="detail-row">
-							<span class="detail-label">Created By</span>
-							<span class="detail-value">{getCreatorName(detailItem.created_by)}</span>
-						</div>
-					{/if}
-					<div class="detail-row">
-						<span class="detail-label">Created At</span>
-						<span class="detail-value">{formatDate(detailItem.created_at)}</span>
-					</div>
+					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{getCreatorName(detailItem.created_by) || '—'}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.created_at)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.is_listed ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.is_listed ? t('common.listed') : t('common.unlisted')}</span></div>
 				</div>
 			</div>
 		</div>
@@ -586,11 +595,12 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showEditModal && editingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" role="dialog" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Edit {activeLevel === 'main' ? 'Main' : activeLevel === 'sub' ? 'Sub' : 'Secondary'} Section</h2>
-				<button class="modal-close" onclick={() => (showEditModal = false)}>
+				<h2 class="modal-title">{t('sections.edit_section')}</h2>
+				<button class="modal-close" aria-label="Close" onclick={() => (showEditModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -601,24 +611,32 @@
 
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
 				<div class="form-group">
-					<label for="section-name" class="form-label">Name *</label>
+					<label for="section-name" class="form-label">{t('common.name')} *</label>
 					<input type="text" id="section-name" bind:value={editForm.name} class="form-input" required />
 				</div>
 
 				<div class="form-group">
-					<label for="section-order" class="form-label">Order Index</label>
+					<label for="section-order" class="form-label">{t('sections.order_index')}</label>
 					<input type="number" id="section-order" bind:value={editForm.order_index} class="form-input" />
+				</div>
+
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="section-listed" bind:checked={editForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
 				</div>
 
 				<div class="modal-actions">
 					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>
-						Cancel
+						{t('common.cancel')}
 					</button>
 					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>
 						{#if editFormLoading}
 							<span class="spinner-sm"></span>
 						{/if}
-						Save Changes
+						{t('common.save_changes')}
 					</button>
 				</div>
 			</form>
@@ -631,16 +649,17 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" role="dialog" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Delete Section</h2>
-				<button class="modal-close" onclick={() => (showDeleteModal = false)}>
+				<h2 class="modal-title">{t('sections.delete_section')}</h2>
+				<button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
 			<p class="delete-message">
-				Are you sure you want to delete <strong>"{deletingItem.name}"</strong>?
+				{t('sections.delete_confirm')} <strong>"{deletingItem.name}"</strong>?
 				{#if activeLevel === 'main'}
 					All sub sections and secondary sub sections will also be deleted.
 				{:else if activeLevel === 'sub'}

@@ -11,13 +11,18 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import LoadingScreen from '$lib/components/LoadingScreen.svelte';
+	import { setLanguage, getLanguage, getDir } from '$lib/i18n/store.svelte.js';
 	import '../app.css';
 
 	let { children } = $props();
 
 	const authState = getAuthState();
+	let currentDir = $derived(getDir());
 
 	onMount(async () => {
+		// Initialize Document Language/Dir direction
+		setLanguage(getLanguage());
+		
 		const currentPath = page.url?.pathname || '/';
 
 		// Skip auth hydration on login page
@@ -98,5 +103,7 @@
 {#if authState.isLoading && page.url?.pathname !== '/login'}
 	<LoadingScreen message="Authenticating" />
 {:else}
-	{@render children()}
+	<div dir={currentDir} style="display: contents;">
+		{@render children()}
+	</div>
 {/if}

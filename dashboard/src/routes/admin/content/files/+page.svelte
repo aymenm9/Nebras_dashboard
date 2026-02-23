@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { listAllFiles, patchAdminFile, deleteAdminFile, listModerators, listMainSections } from '$lib/api/admin.js';
 	import { formatFileSize } from '$lib/utils/fileUpload.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	let items = $state([]);
 	let totalCount = $state(0);
@@ -14,6 +15,7 @@
 	let filterCreatedBy = $state('');
 	let filterMainSection = $state('');
 	let filterContentType = $state('');
+	let filterIsListed = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 
@@ -23,7 +25,7 @@
 	// Edit
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ title: '', description: '' });
+	let editForm = $state({ title: '', description: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -55,6 +57,7 @@
 				created_by: filterCreatedBy || undefined,
 				main_section: filterMainSection || undefined,
 				content_type: filterContentType || undefined,
+				metadata__is_listed: filterIsListed === '' ? undefined : filterIsListed === 'true',
 				page: currentPage
 			});
 			items = data.results; totalCount = data.count;
@@ -71,7 +74,7 @@
 	// Edit
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '' };
+		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -79,7 +82,7 @@
 		editFormError = ''; editFormLoading = true;
 		try {
 			await patchAdminFile(editingItem.id, {
-				metadata: { title: editForm.title, description: editForm.description || undefined }
+				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -110,60 +113,67 @@
 	}
 </script>
 
-<svelte:head><title>Manage Files — Nebras</title></svelte:head>
+<svelte:head><title>{t('content.title')} — Nebras</title></svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<div><h1 class="page-title">Content Management</h1><p class="page-desc">All content across all moderators</p></div>
+		<div><h1 class="page-title">{t('content.title')}</h1><p class="page-desc">{t('content.desc')}</p></div>
 	</div>
 
 	<div class="tabs">
-		<a href="/admin/content/youtube" class="tab">YouTube Videos</a>
-		<a href="/admin/content/files" class="tab active">File Uploads</a>
+		<a href="/admin/content/youtube" class="tab">{t('content.youtube_videos')}</a>
+		<a href="/admin/content/files" class="tab active">{t('content.file_uploads')}</a>
 	</div>
 
 	<div class="toolbar">
 		<div class="search-box">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-			<input type="text" placeholder="Search files..." bind:value={searchQuery} oninput={handleSearch} class="search-input" />
+			<input type="text" placeholder={t('content.search_files')} bind:value={searchQuery} oninput={handleSearch} class="search-input" />
 		</div>
 		<select class="filter-select" bind:value={filterContentType} onchange={handleFilterChange}>
-			<option value="">All Types</option>
-			<option value="video">Video</option>
-			<option value="audio">Audio</option>
-			<option value="document">Document</option>
+			<option value="">{t('content.all_types')}</option>
+			<option value="video">{t('content.video')}</option>
+			<option value="audio">{t('content.audio')}</option>
+			<option value="document">{t('content.document')}</option>
 		</select>
 		<select class="filter-select" bind:value={filterCreatedBy} onchange={handleFilterChange}>
-			<option value="">All Creators</option>
+			<option value="">{t('content.all_creators')}</option>
 			{#each moderatorsList as m}<option value={m.id}>{m.username}</option>{/each}
 		</select>
 		<select class="filter-select" bind:value={filterMainSection} onchange={handleFilterChange}>
-			<option value="">All Sections</option>
+			<option value="">{t('content.all_sections')}</option>
 			{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 		</select>
-		<div class="count-badge">{totalCount} files</div>
+		<select class="filter-select" bind:value={filterIsListed} onchange={handleFilterChange}>
+			<option value="">{t('common.all')} ({t('common.is_listed')})</option>
+			<option value="true">{t('common.listed')}</option>
+			<option value="false">{t('common.unlisted')}</option>
+		</select>
+		<div class="count-badge">{totalCount} {t('common.total')}</div>
 	</div>
 
 	{#if error}<div class="alert alert-error">{error}</div>{/if}
 
 	<div class="content-container">
 		{#if isLoading}
-			<div class="state-box"><div class="spinner"></div><span>Loading...</span></div>
+			<div class="state-box"><div class="spinner"></div><span>{t('common.loading')}</span></div>
 		{:else if items.length === 0}
-			<div class="state-box empty-state"><p>No files found</p></div>
+			<div class="state-box empty-state"><p>{t('content.no_files')}</p></div>
 		{:else}
 			<div class="file-list">
 				{#each items as item (item.id)}
-					<div class="file-row" onclick={() => openDetailModal(item)}>
+					<div class="file-row" role="button" tabindex="0" onclick={() => openDetailModal(item)} onkeydown={(e) => e.key === 'Enter' && openDetailModal(item)}>
 						<div class="file-icon">{contentTypeIcon(item.metadata?.content_type)}</div>
 						<div class="file-info">
 							<span class="file-name">{item.metadata?.title || item.filename || 'Untitled'}</span>
 							<span class="file-meta">{item.file_type} · {formatFileSize(item.file_size)}</span>
 						</div>
-						<span class="file-creator">{item.metadata?.created_by || '—'}</span>
+						<span class="file-creator" style="color: {item.metadata?.is_listed === false ? 'var(--color-danger-400)' : 'inherit'};">
+							{item.metadata?.is_listed === false ? t('common.unlisted') : item.metadata?.created_by || '—'}
+						</span>
 						<span class="file-status {statusColor(item.upload_status)}">{item.upload_status}</span>
 						<span class="file-date">{formatDate(item.metadata?.created_at)}</span>
-						<div class="file-actions" onclick={(e) => e.stopPropagation()}>
+						<div class="file-actions" role="presentation" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
 							<button class="action-btn edit" title="Edit" onclick={() => openEditModal(item)}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
 							</button>
@@ -179,7 +189,7 @@
 
 	{#if totalPages > 1}
 		<div class="pagination">
-			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← Prev</button>
+			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← {t('common.previous')}</button>
 			<div class="page-numbers">
 				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
 					{#if p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)}
@@ -189,7 +199,7 @@
 					{/if}
 				{/each}
 			</div>
-			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>Next →</button>
+			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>{t('common.next')} →</button>
 		</div>
 	{/if}
 </div>
@@ -197,23 +207,24 @@
 <!-- Detail Modal -->
 {#if showDetailModal && detailItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDetailModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">File Details</h2><button class="modal-close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">File Details</h2><button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="detail-content">
 				{#if detailItem.metadata?.thumbnail}
 					<img src={detailItem.metadata.thumbnail} alt="" class="detail-thumb" />
 				{/if}
 				<div class="detail-fields">
 					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
-					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
-					<div class="detail-row"><span class="detail-label">File</span><span class="detail-value">{detailItem.filename}</span></div>
+					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.file')}</span><span class="detail-value">{detailItem.filename}</span></div>
 					<div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">{detailItem.file_type}</span></div>
-					<div class="detail-row"><span class="detail-label">Size</span><span class="detail-value">{formatFileSize(detailItem.file_size)}</span></div>
-					<div class="detail-row"><span class="detail-label">Upload</span><span class="detail-value">{detailItem.upload_type} — {detailItem.upload_status}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.size')}</span><span class="detail-value">{formatFileSize(detailItem.file_size)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.upload')}</span><span class="detail-value">{detailItem.upload_type} — {detailItem.upload_status}</span></div>
 					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
-					{#if detailItem.file_url}<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a href={detailItem.file_url} target="_blank" rel="noopener" class="link">Open file</a></span></div>{/if}
-					<div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
+					{#if detailItem.file_url}<div class="detail-row"><span class="detail-label">{t('content.url')}</span><span class="detail-value"><a href={detailItem.file_url} target="_blank" rel="noopener" class="link">{t('content.open_file')}</a></span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>
 			</div>
 		</div>
@@ -223,16 +234,23 @@
 <!-- Edit Modal -->
 {#if showEditModal && editingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Edit File Metadata</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.edit_file')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
-				<div class="form-group"><label for="edit-title" class="form-label">Title</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
-				<div class="form-group"><label for="edit-desc" class="form-label">Description</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
+				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
+				</div>
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>Cancel</button>
-					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}Save</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>{t('common.cancel')}</button>
+					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}{t('common.save_changes')}</button>
 				</div>
 			</form>
 		</div>
@@ -242,13 +260,13 @@
 <!-- Delete Modal -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Delete File</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
-			<p class="delete-message">Delete <strong>"{deletingItem.metadata?.title || deletingItem.filename}"</strong>? This cannot be undone.</p>
+			<div class="modal-header"><h2 class="modal-title">{t('content.delete_file')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<p class="delete-message">{t('content.delete_confirm')} <strong>"{deletingItem.metadata?.title || deletingItem.filename}"</strong>?</p>
 			<div class="modal-actions pad-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
-				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}Delete</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
+				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}{t('common.delete')}</button>
 			</div>
 		</div>
 	</div>

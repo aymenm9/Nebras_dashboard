@@ -3,6 +3,7 @@
 	import { getAuthState } from '$lib/stores/auth.svelte.js';
 	import { fetchMe } from '$lib/api/auth.js';
 	import { updateProfile, changePassword } from '$lib/api/user.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	const authState = getAuthState();
 
@@ -62,7 +63,7 @@
 			await updateProfile(data);
 			await fetchMe();
 			syncFormFromUser();
-			profileSuccess = 'Profile updated successfully!';
+			profileSuccess = t('profile.updated_success');
 			profileImage = null;
 			setTimeout(() => { profileSuccess = ''; }, 3000);
 		} catch (err) {
@@ -84,7 +85,7 @@
 		}
 		try {
 			await changePassword(passwordForm.old_password, passwordForm.new_password);
-			passwordSuccess = 'Password changed successfully!';
+			passwordSuccess = t('profile.password_success');
 			passwordForm = { old_password: '', new_password: '', confirm_password: '' };
 			setTimeout(() => { passwordSuccess = ''; }, 3000);
 		} catch (err) {
@@ -107,10 +108,10 @@
 		<div>
 			<button class="back-btn" onclick={() => history.back()}>
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7l-7 7 7 7" /></svg>
-				Back
+				{t('common.back')}
 			</button>
-			<h1 class="page-title">My Profile</h1>
-			<p class="page-desc">Manage your personal information and security</p>
+			<h1 class="page-title">{t('profile.title')}</h1>
+			<p class="page-desc">{t('profile.desc')}</p>
 		</div>
 	</div>
 
@@ -118,7 +119,7 @@
 	<div class="section">
 		<div class="section-header">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="section-icon"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-			<h2 class="section-title">Personal Information</h2>
+			<h2 class="section-title">{t('profile.personal_info')}</h2>
 		</div>
 
 		{#if profileError}<div class="alert alert-error">{profileError}</div>{/if}
@@ -138,26 +139,26 @@
 					<span class="avatar-name">{displayName}</span>
 					<span class="avatar-role">{userRole}</span>
 					<div class="avatar-btns">
-						<label class="btn btn-secondary btn-sm" for="profile-image">Change Photo</label>
+						<label class="btn btn-secondary btn-sm" for="profile-image">{t('profile.change_photo')}</label>
 						<input type="file" id="profile-image" accept="image/*" class="file-input-hidden" onchange={handleImageSelect} />
-						{#if profileImage}<button type="button" class="btn btn-ghost btn-sm" onclick={removeImage}>Undo</button>{/if}
+						{#if profileImage}<button type="button" class="btn btn-ghost btn-sm" onclick={removeImage}>{t('profile.undo')}</button>{/if}
 					</div>
 				</div>
 			</div>
 
 			<div class="form-row">
-				<div class="form-group"><label for="p-first" class="form-label">First Name</label><input type="text" id="p-first" bind:value={profileForm.first_name} class="form-input" placeholder="First name" /></div>
-				<div class="form-group"><label for="p-last" class="form-label">Last Name</label><input type="text" id="p-last" bind:value={profileForm.last_name} class="form-input" placeholder="Last name" /></div>
+				<div class="form-group"><label for="p-first" class="form-label">{t('profile.first_name')}</label><input type="text" id="p-first" bind:value={profileForm.first_name} class="form-input" /></div>
+				<div class="form-group"><label for="p-last" class="form-label">{t('profile.last_name')}</label><input type="text" id="p-last" bind:value={profileForm.last_name} class="form-input" /></div>
 			</div>
 			<div class="form-row">
-				<div class="form-group"><label for="p-username" class="form-label">Username</label><input type="text" id="p-username" bind:value={profileForm.username} class="form-input" required /></div>
-				<div class="form-group"><label for="p-email" class="form-label">Email</label><input type="email" id="p-email" bind:value={profileForm.email} class="form-input" required /></div>
+				<div class="form-group"><label for="p-username" class="form-label">{t('profile.username')}</label><input type="text" id="p-username" bind:value={profileForm.username} class="form-input" required /></div>
+				<div class="form-group"><label for="p-email" class="form-label">{t('profile.email')}</label><input type="email" id="p-email" bind:value={profileForm.email} class="form-input" required /></div>
 			</div>
 
 			<div class="form-actions">
 				<button type="submit" class="btn btn-primary" disabled={profileLoading}>
 					{#if profileLoading}<span class="spinner-sm"></span>{/if}
-					Save Changes
+					{t('common.save_changes')}
 				</button>
 			</div>
 		</form>
@@ -167,7 +168,7 @@
 	<div class="section">
 		<div class="section-header">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="section-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
-			<h2 class="section-title">Change Password</h2>
+			<h2 class="section-title">{t('profile.change_password')}</h2>
 		</div>
 
 		{#if passwordError}<div class="alert alert-error">{passwordError}</div>{/if}
@@ -176,7 +177,7 @@
 		<form onsubmit={(e) => { e.preventDefault(); handlePasswordSubmit(); }} class="section-body">
 			<div class="form-row form-row-three">
 				<div class="form-group">
-					<label for="pw-old" class="form-label">Current Password</label>
+					<label for="pw-old" class="form-label">{t('profile.current_password')}</label>
 					<div class="pw-wrap">
 						<input type={showOldPassword ? 'text' : 'password'} id="pw-old" bind:value={passwordForm.old_password} class="form-input" required />
 						<button type="button" class="toggle-pw" onclick={() => (showOldPassword = !showOldPassword)} tabindex="-1">
@@ -189,7 +190,7 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<label for="pw-new" class="form-label">New Password</label>
+					<label for="pw-new" class="form-label">{t('profile.new_password')}</label>
 					<div class="pw-wrap">
 						<input type={showNewPassword ? 'text' : 'password'} id="pw-new" bind:value={passwordForm.new_password} class="form-input" required minlength="8" />
 						<button type="button" class="toggle-pw" onclick={() => (showNewPassword = !showNewPassword)} tabindex="-1">
@@ -202,14 +203,14 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<label for="pw-confirm" class="form-label">Confirm New Password</label>
+					<label for="pw-confirm" class="form-label">{t('profile.confirm_password')}</label>
 					<input type="password" id="pw-confirm" bind:value={passwordForm.confirm_password} class="form-input" required minlength="8" />
 				</div>
 			</div>
 			<div class="form-actions">
 				<button type="submit" class="btn btn-primary" disabled={passwordLoading}>
 					{#if passwordLoading}<span class="spinner-sm"></span>{/if}
-					Update Password
+					{t('profile.update_password')}
 				</button>
 			</div>
 		</form>
@@ -255,8 +256,8 @@
 
 	/* Password toggle */
 	.pw-wrap { position: relative; }
-	.pw-wrap .form-input { padding-right: 2.5rem; }
-	.toggle-pw { position: absolute; right: 0.625rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-surface-500); padding: 0.25rem; display: flex; }
+	.pw-wrap .form-input { padding-inline-end: 2.5rem; }
+	.toggle-pw { position: absolute; inset-inline-end: 0.625rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--color-surface-500); padding: 0.25rem; display: flex; }
 	.toggle-pw:hover { color: var(--color-surface-300); }
 	.toggle-pw svg { width: 16px; height: 16px; }
 

@@ -8,6 +8,7 @@
 	import { login, fetchMe } from '$lib/api/auth.js';
 	import { getAuthState, setViewMode } from '$lib/stores/auth.svelte.js';
 	import { goto } from '$app/navigation';
+	import { t, getDir } from '$lib/i18n/store.svelte.js';
 
 	let username = $state('');
 	let password = $state('');
@@ -59,6 +60,8 @@
 			isSubmitting = false;
 		}
 	}
+	
+	import { toggleLanguage, getLanguage } from '$lib/i18n/store.svelte.js';
 </script>
 
 <svelte:head>
@@ -66,6 +69,11 @@
 </svelte:head>
 
 <div class="login-page" id="login-page">
+	<div class="lang-switch-container">
+		<button class="lang-btn" onclick={toggleLanguage} title="Change Language">
+			{getLanguage() === 'ar' ? 'EN' : 'عربي'}
+		</button>
+	</div>
 	<div class="bg-pattern"></div>
 
 	<div class="login-card animate-fade-in">
@@ -77,7 +85,7 @@
 				</svg>
 			</div>
 			<h1 class="brand-title">Nebras</h1>
-			<p class="brand-subtitle">Content Management Dashboard</p>
+			<p class="brand-subtitle">{t('login.desc')}</p>
 		</div>
 
 		<!-- Form -->
@@ -92,16 +100,16 @@
 			{/if}
 
 			<div class="form-group">
-				<label for="username" class="form-label">Username</label>
+				<label for="username" class="form-label">{t('login.username')}</label>
 				<input type="text" id="username" bind:value={username} class="form-input"
-					placeholder="Enter your username" autocomplete="username" disabled={isSubmitting} />
+					placeholder={t('login.username')} autocomplete="username" disabled={isSubmitting} />
 			</div>
 
 			<div class="form-group">
-				<label for="password" class="form-label">Password</label>
+				<label for="password" class="form-label">{t('login.password')}</label>
 				<div class="password-wrapper">
 					<input type={showPassword ? 'text' : 'password'} id="password" bind:value={password}
-						class="form-input" placeholder="Enter your password" autocomplete="current-password"
+						class="form-input" placeholder={t('login.password')} autocomplete="current-password"
 						disabled={isSubmitting} />
 					<button type="button" class="password-toggle"
 						onclick={() => (showPassword = !showPassword)} tabindex="-1">
@@ -117,9 +125,9 @@
 			<button type="submit" class="submit-btn" id="login-submit" disabled={isSubmitting}>
 				{#if isSubmitting}
 					<span class="spinner"></span>
-					Signing in...
+					{t('login.signing_in')}
 				{:else}
-					Sign In
+					{t('login.sign_in')}
 				{/if}
 			</button>
 		</form>
@@ -140,6 +148,30 @@
 		position: relative;
 		overflow: hidden;
 		padding: 1rem;
+	}
+
+	.lang-switch-container {
+		position: absolute;
+		top: 1rem;
+		inset-inline-end: 1.5rem;
+		z-index: 10;
+	}
+
+	.lang-btn {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--color-surface-700);
+		color: var(--color-primary-400);
+		font-weight: 700;
+		font-size: 0.8125rem;
+		padding: 0.375rem 0.75rem;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.lang-btn:hover {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: var(--color-surface-600);
 	}
 
 	.bg-pattern {
@@ -256,11 +288,11 @@
 	.form-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 	.password-wrapper { position: relative; }
-	.password-wrapper .form-input { padding-right: 2.5rem; }
+	.password-wrapper .form-input { padding-inline-end: 2.5rem; }
 
 	.password-toggle {
 		position: absolute;
-		right: 0.75rem;
+		inset-inline-end: 0.75rem;
 		top: 50%;
 		transform: translateY(-50%);
 		background: none;

@@ -8,6 +8,7 @@
 	import { getAuthState, toggleViewMode } from '$lib/stores/auth.svelte.js';
 	import { logout } from '$lib/api/auth.js';
 	import { page } from '$app/state';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	const authState = getAuthState();
 
@@ -25,29 +26,27 @@
 
 	// ─── Menu Items ────────────────────────────────────────
 
-	const adminMenu = [
-		{ label: 'Dashboard', href: '/admin', icon: 'dashboard' },
-		{ label: 'Statistics', href: '/admin/statistics', icon: 'stats' },
+	let adminMenu = $derived([
+		{ label: t('common.dashboard'), href: '/admin', icon: 'dashboard' },
 		{
-			label: 'Users',
+			label: t('common.users'),
 			icon: 'users',
 			children: [
-				{ label: 'Moderators', href: '/admin/users/moderators' },
-				{ label: 'Bans', href: '/admin/users/bans' }
+				{ label: t('common.moderators'), href: '/admin/users/moderators' },
+				{ label: t('common.bans'), href: '/admin/users/bans' }
 			]
 		},
-		{ label: 'Sections', href: '/admin/sections', icon: 'sections' },
-		{ label: 'Content', href: '/admin/content', icon: 'content' },
-		{ label: 'Chat', href: '/admin/chat', icon: 'chat' }
-	];
+		{ label: t('common.sections'), href: '/admin/sections', icon: 'sections' },
+		{ label: t('common.content'), href: '/admin/content', icon: 'content' },
+		{ label: t('common.chat'), href: '/admin/chat', icon: 'chat' }
+	]);
 
-	const moderatorMenu = [
-		{ label: 'Dashboard', href: '/moderator', icon: 'dashboard' },
-		{ label: 'Statistics', href: '/moderator/statistics', icon: 'stats' },
-		{ label: 'Sections', href: '/moderator/sections', icon: 'sections' },
-		{ label: 'Content', href: '/moderator/content', icon: 'content' },
-		{ label: 'Chat', href: '/moderator/chat', icon: 'chat' }
-	];
+	let moderatorMenu = $derived([
+		{ label: t('common.dashboard'), href: '/moderator', icon: 'dashboard' },
+		{ label: t('common.sections'), href: '/moderator/sections', icon: 'sections' },
+		{ label: t('common.content'), href: '/moderator/content', icon: 'content' },
+		{ label: t('common.chat'), href: '/moderator/chat', icon: 'chat' }
+	]);
 
 	let menuItems = $derived(viewMode === 'admin' ? adminMenu : moderatorMenu);
 
@@ -140,7 +139,7 @@
 					stroke-linecap="round" stroke-linejoin="round" class="toggle-icon">
 					<path d={icons.toggle} />
 				</svg>
-				<span>Switch to {viewMode === 'admin' ? 'Moderator' : 'Admin'} View</span>
+				<span>{viewMode === 'admin' ? t('sidebar.moderator_view') : t('sidebar.admin_view')}</span>
 			</button>
 		{/if}
 
@@ -165,7 +164,7 @@
 				stroke-linecap="round" stroke-linejoin="round" class="nav-icon">
 				<path d={icons.logout} />
 			</svg>
-			<span>Logout</span>
+			<span>{t('common.logout')}</span>
 		</button>
 	</div>
 </aside>
@@ -175,11 +174,11 @@
 	.sidebar {
 		position: fixed;
 		top: 0;
-		left: 0;
+		inset-inline-start: 0;
 		bottom: 0;
 		width: 240px;
 		background: var(--color-sidebar-bg);
-		border-right: 1px solid var(--color-sidebar-border);
+		border-inline-end: 1px solid var(--color-sidebar-border);
 		display: flex;
 		flex-direction: column;
 		z-index: 50;
@@ -283,7 +282,7 @@
 	}
 
 	.nav-children {
-		padding-left: 1rem;
+		padding-inline-start: 1rem;
 		display: flex;
 		flex-direction: column;
 		gap: 1px;

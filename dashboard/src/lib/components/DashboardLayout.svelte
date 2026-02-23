@@ -7,6 +7,7 @@
 <script>
 	import Sidebar from './Sidebar.svelte';
 	import { getAuthState } from '$lib/stores/auth.svelte.js';
+	import { toggleLanguage, getLanguage, t } from '$lib/i18n/store.svelte.js';
 
 	let { children } = $props();
 
@@ -28,7 +29,7 @@
 					</svg>
 					<input
 						type="text"
-						placeholder="Search..."
+						placeholder={t('common.search')}
 						bind:value={searchQuery}
 						class="search-input"
 						id="search-input"
@@ -37,6 +38,10 @@
 			</div>
 
 			<div class="header-right">
+				<button class="header-icon-btn lang-btn" onclick={toggleLanguage} title="Change Language">
+					{getLanguage() === 'ar' ? 'EN' : 'عربي'}
+				</button>
+
 				<!-- Notification bell -->
 				<button class="header-icon-btn" id="notifications-btn" title="Notifications">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -75,7 +80,7 @@
 
 	.main-wrapper {
 		flex: 1;
-		margin-left: 240px;
+		margin-inline-start: 240px;
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
@@ -168,8 +173,13 @@
 		height: 18px;
 	}
 
+	.lang-btn {
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
+
 	.header-user {
-		margin-left: 0.25rem;
+		margin-inline-start: 0.25rem;
 	}
 
 	.header-avatar {

@@ -374,3 +374,34 @@ export async function removeFile(fileId) {
     return true;
 }
 
+// ─── Dashboard Statistics ──────────────────────────────
+
+/**
+ * Get aggregate total counts of content items, YouTube videos, and sections created by the moderator.
+ * @returns {Promise<Object>}
+ */
+export async function getModeratorTotals() {
+    const res = await apiGet('/api/dashboard-statistics/moderator/totals/');
+    if (!res.ok) throw new Error('Failed to fetch moderator totals');
+    return res.json();
+}
+
+/**
+ * Get content distribution uploaded by the moderator.
+ * @returns {Promise<Object>}
+ */
+export async function getModeratorContentDistribution() {
+    const res = await apiGet('/api/dashboard-statistics/moderator/content-distribution/');
+    if (!res.ok) throw new Error('Failed to fetch moderator content distribution');
+    return res.json();
+}
+
+/**
+ * Get daily upload counts by content type for the last 30 days specific to the moderator.
+ * @returns {Promise<{data: Array}>}
+ */
+export async function getModeratorContentAddedChart() {
+    const res = await apiGet('/api/dashboard-statistics/moderator/content-added-chart/');
+    if (!res.ok) throw new Error('Failed to fetch moderator content added chart');
+    return res.json();
+}

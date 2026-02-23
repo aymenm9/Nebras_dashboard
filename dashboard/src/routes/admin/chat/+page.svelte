@@ -5,6 +5,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { listAdminMessages, deleteAdminMessage } from '$lib/api/chat.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	let messages = $state([]);
 	let totalCount = $state(0);
@@ -57,21 +58,21 @@
 	}
 </script>
 
-<svelte:head><title>Chat Moderation — Nebras</title></svelte:head>
+<svelte:head><title>{t('chat.moderation')} — Nebras</title></svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<div><h1 class="page-title">Chat Moderation</h1><p class="page-desc">View and moderate all chat messages</p></div>
-		<div class="count-badge">{totalCount} messages</div>
+		<div><h1 class="page-title">{t('chat.moderation')}</h1><p class="page-desc">{t('chat.moderation_desc')}</p></div>
+		<div class="count-badge">{totalCount} {t('chat.messages_count')}</div>
 	</div>
 
 	{#if error}<div class="alert alert-error">{error}</div>{/if}
 
 	<div class="content-container">
 		{#if isLoading}
-			<div class="state-box"><div class="spinner"></div><span>Loading...</span></div>
+			<div class="state-box"><div class="spinner"></div><span>{t('common.loading')}</span></div>
 		{:else if messages.length === 0}
-			<div class="state-box empty-state"><p>No messages found</p></div>
+			<div class="state-box empty-state"><p>{t('chat.no_messages')}</p></div>
 		{:else}
 			<div class="msg-list">
 				{#each messages as msg (msg.id)}
@@ -108,7 +109,7 @@
 
 	{#if totalPages > 1}
 		<div class="pagination">
-			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← Prev</button>
+			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← {t('common.previous')}</button>
 			<div class="page-numbers">
 				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
 					{#if p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)}
@@ -118,7 +119,7 @@
 					{/if}
 				{/each}
 			</div>
-			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>Next →</button>
+			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>{t('common.next')} →</button>
 		</div>
 	{/if}
 </div>
@@ -126,16 +127,17 @@
 <!-- Delete Modal -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="modal-overlay" role="dialog" tabindex="-1" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Delete Message</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('chat.delete_msg')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="delete-body">
-				<p class="delete-message">Delete this message from <strong>{deletingItem.username}</strong>?</p>
+				<p class="delete-message">{t('chat.delete_confirm')} <strong>{deletingItem.username}</strong>?</p>
 				{#if deletingItem.message}<div class="delete-preview">"{deletingItem.message}"</div>{/if}
 			</div>
 			<div class="modal-actions pad-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
-				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}Delete</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
+				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}{t('common.delete')}</button>
 			</div>
 		</div>
 	</div>

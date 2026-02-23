@@ -395,3 +395,55 @@ export async function deleteAdminFile(id) {
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Failed to delete file'); }
     return true;
 }
+
+// ─── Statistics Management ─────────────────────────────
+
+/**
+ * Get overall platforms totals (Moderators, Content, Sections, Chat).
+ * @returns {Promise<Object>}
+ */
+export async function getAdminTotals() {
+    const res = await apiGet('/api/admin/statistics/totals/');
+    if (!res.ok) throw new Error('Failed to fetch admin totals');
+    return res.json();
+}
+
+/**
+ * Get content distribution (Video, Audio, Document, Youtube).
+ * @returns {Promise<Object>}
+ */
+export async function getAdminContentDistribution() {
+    const res = await apiGet('/api/admin/statistics/content-distribution/');
+    if (!res.ok) throw new Error('Failed to fetch admin content distribution');
+    return res.json();
+}
+
+/**
+ * Get top main sections by content count.
+ * @returns {Promise<Array>}
+ */
+export async function getAdminTopSections() {
+    const res = await apiGet('/api/admin/statistics/top-sections/');
+    if (!res.ok) throw new Error('Failed to fetch admin top sections');
+    return res.json();
+}
+
+/**
+ * Get registration timeline for last 30 days.
+ * @returns {Promise<{data: Array}>}
+ */
+export async function getAdminRegistrationsChart() {
+    const res = await apiGet('/api/admin/statistics/registrations-chart/');
+    if (!res.ok) throw new Error('Failed to fetch admin registrations chart');
+    return res.json();
+}
+
+/**
+ * Get content added timeline for last 30 days.
+ * @returns {Promise<{data: Array}>}
+ */
+export async function getAdminContentAddedChart() {
+    const res = await apiGet('/api/admin/statistics/content-added-chart/');
+    if (!res.ok) throw new Error('Failed to fetch admin content added chart');
+    return res.json();
+}

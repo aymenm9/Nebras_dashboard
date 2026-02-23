@@ -12,6 +12,7 @@
 		updateModerator,
 		deleteModerator
 	} from '$lib/api/admin.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	// ─── State ──────────────────────────────────────────
 	let moderators = $state([]);
@@ -178,14 +179,14 @@
 	<!-- Page Header -->
 	<div class="page-header">
 		<div class="header-info">
-			<h1 class="page-title">Moderators</h1>
-			<p class="page-desc">Manage staff accounts and permissions</p>
+			<h1 class="page-title">{t('moderators.title')}</h1>
+			<p class="page-desc">{t('moderators.desc')}</p>
 		</div>
 		<button class="btn btn-primary" id="create-moderator-btn" onclick={openCreateModal}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
 				<path d="M12 4v16m8-8H4" />
 			</svg>
-			Add Moderator
+			{t('moderators.new_mod')}
 		</button>
 	</div>
 
@@ -197,7 +198,7 @@
 			</svg>
 			<input
 				type="text"
-				placeholder="Search moderators..."
+				placeholder={t('moderators.search')}
 				bind:value={searchQuery}
 				oninput={handleSearch}
 				class="search-input"
@@ -206,7 +207,7 @@
 		</div>
 
 		<select class="filter-select" bind:value={filterActive} onchange={handleFilterChange}>
-			<option value="">All Status</option>
+			<option value="">{t('common.status')} / {t('common.total')}</option>
 			<option value="true">Active</option>
 			<option value="false">Inactive</option>
 		</select>
@@ -218,7 +219,7 @@
 		</select>
 
 		<div class="count-badge">
-			{totalCount} total
+			{t('common.total')} {totalCount}
 		</div>
 	</div>
 
@@ -245,10 +246,10 @@
 			<table class="data-table" id="moderators-table">
 				<thead>
 					<tr>
-						<th>User</th>
-						<th>Email</th>
-						<th>Status</th>
-						<th class="th-actions">Actions</th>
+						<th>{t('common.users')}</th>
+						<th>{t('profile.email')}</th>
+						<th>{t('common.status')}</th>
+						<th class="th-actions">{t('common.actions')}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -324,11 +325,11 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showCreateModal || showEditModal}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onkeydown={(e) => e.key === 'Escape' && (showCreateModal = false, showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) { showCreateModal = false; showEditModal = false; } }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showCreateModal = false, showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) { showCreateModal = false; showEditModal = false; } }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">{showEditModal ? 'Edit Moderator' : 'Create Moderator'}</h2>
-				<button class="modal-close" onclick={() => (showCreateModal = false, showEditModal = false)}>
+				<h2 class="modal-title">{showEditModal ? t('moderators.edit_mod') : t('moderators.create_mod')}</h2>
+				<button class="modal-close" aria-label="Close" onclick={() => (showCreateModal = false, showEditModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -340,41 +341,41 @@
 			<form onsubmit={(e) => { e.preventDefault(); showEditModal ? handleEdit() : handleCreate(); }} class="modal-form">
 				<div class="form-row">
 					<div class="form-group">
-						<label for="mod-first-name" class="form-label">First Name</label>
+						<label for="mod-first-name" class="form-label">{t('profile.first_name')}</label>
 						<input type="text" id="mod-first-name" bind:value={formData.first_name} class="form-input" placeholder="John" />
 					</div>
 					<div class="form-group">
-						<label for="mod-last-name" class="form-label">Last Name</label>
+						<label for="mod-last-name" class="form-label">{t('profile.last_name')}</label>
 						<input type="text" id="mod-last-name" bind:value={formData.last_name} class="form-input" placeholder="Doe" />
 					</div>
 				</div>
 
 				<div class="form-group">
-					<label for="mod-username" class="form-label">Username *</label>
+					<label for="mod-username" class="form-label">{t('profile.username')} *</label>
 					<input type="text" id="mod-username" bind:value={formData.username} class="form-input" placeholder="moderator1" required />
 				</div>
 
 				<div class="form-group">
-					<label for="mod-email" class="form-label">Email *</label>
+					<label for="mod-email" class="form-label">{t('profile.email')} *</label>
 					<input type="email" id="mod-email" bind:value={formData.email} class="form-input" placeholder="mod@example.com" required />
 				</div>
 
 				<div class="form-group">
 					<label for="mod-password" class="form-label">
-						Password {showEditModal ? '(leave empty to keep current)' : '*'}
+						{t('profile.new_password')} {showEditModal ? t('moderators.leave_empty') : '*'}
 					</label>
 					<input type="password" id="mod-password" bind:value={formData.password} class="form-input" placeholder="••••••••" required={!showEditModal} />
 				</div>
 
 				<div class="modal-actions">
 					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false, showEditModal = false)}>
-						Cancel
+						{t('common.cancel')}
 					</button>
 					<button type="submit" class="btn btn-primary" disabled={formLoading}>
 						{#if formLoading}
 							<span class="spinner-sm"></span>
 						{/if}
-						{showEditModal ? 'Save Changes' : 'Create Moderator'}
+						{showEditModal ? t('common.save_changes') : t('moderators.new_mod')}
 					</button>
 				</div>
 			</form>
@@ -387,25 +388,25 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 {#if showDeleteModal && deletingMod}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Delete Moderator</h2>
-				<button class="modal-close" onclick={() => (showDeleteModal = false)}>
+				<h2 class="modal-title">{t('moderators.delete_mod')}</h2>
+				<button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
 			<p class="delete-message">
-				Are you sure you want to delete <strong>@{deletingMod.username}</strong>?
+				{t('moderators.delete_confirm')} <strong>@{deletingMod.username}</strong>?
 				This action cannot be undone.
 			</p>
 			<div class="modal-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
 				<button class="btn btn-danger" onclick={handleDelete} disabled={formLoading}>
 					{#if formLoading}
 						<span class="spinner-sm"></span>
 					{/if}
-					Delete
+					{t('common.delete')}
 				</button>
 			</div>
 		</div>

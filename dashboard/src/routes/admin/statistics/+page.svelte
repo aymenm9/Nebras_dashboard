@@ -1,13 +1,14 @@
 <script>
 	import PagePlaceholder from '$lib/components/PagePlaceholder.svelte';
+	import { t } from '$lib/i18n/store.svelte.js';
 </script>
 
 <svelte:head>
-	<title>Admin Statistics — Nebras</title>
+	<title>{t('statistics.title')} — Nebras Admin</title>
 </svelte:head>
 
 <PagePlaceholder
-	title="Statistics"
-	description="System-wide analytics, content uploads, storage usage, user activity graphs, and performance metrics will be displayed here."
+	title={t('statistics.title')}
+	description={t('statistics.desc')}
 	icon="stats"
 />

@@ -8,6 +8,7 @@
 		listAllYoutubeVideos, patchAdminYoutubeVideo, deleteAdminYoutubeVideo,
 		listModerators, listMainSections
 	} from '$lib/api/admin.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	let items = $state([]);
 	let totalCount = $state(0);
@@ -15,6 +16,7 @@
 	let searchQuery = $state('');
 	let filterCreatedBy = $state('');
 	let filterMainSection = $state('');
+	let filterIsListed = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 
@@ -24,7 +26,7 @@
 	// Edit
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ video_url: '', title: '', description: '' });
+	let editForm = $state({ video_url: '', title: '', description: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -58,6 +60,7 @@
 				search: searchQuery,
 				created_by: filterCreatedBy || undefined,
 				main_section: filterMainSection || undefined,
+				metadata__is_listed: filterIsListed === '' ? undefined : filterIsListed === 'true',
 				page: currentPage
 			});
 			items = data.results;
@@ -76,7 +79,7 @@
 	// Edit
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { video_url: item.video_url || '', title: item.metadata?.title || '', description: item.metadata?.description || '' };
+		editForm = { video_url: item.video_url || '', title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -85,7 +88,7 @@
 		try {
 			await patchAdminYoutubeVideo(editingItem.id, {
 				video_url: editForm.video_url,
-				metadata: { title: editForm.title, description: editForm.description || undefined }
+				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -105,41 +108,46 @@
 	function extractYoutubeId(url) { if (!url) return null; const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/); return m ? m[1] : null; }
 </script>
 
-<svelte:head><title>Manage Content — Nebras</title></svelte:head>
+<svelte:head><title>{t('content.title')} — Nebras</title></svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<div><h1 class="page-title">Content Management</h1><p class="page-desc">All content across all moderators</p></div>
+		<div><h1 class="page-title">{t('content.title')}</h1><p class="page-desc">{t('content.desc')}</p></div>
 	</div>
 
 	<div class="tabs">
-		<a href="/admin/content/youtube" class="tab active">YouTube Videos</a>
-		<a href="/admin/content/files" class="tab">File Uploads</a>
+		<a href="/admin/content/youtube" class="tab active">{t('content.youtube_videos')}</a>
+		<a href="/admin/content/files" class="tab">{t('content.file_uploads')}</a>
 	</div>
 
 	<div class="toolbar">
 		<div class="search-box">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-			<input type="text" placeholder="Search..." bind:value={searchQuery} oninput={handleSearch} class="search-input" />
+			<input type="text" placeholder={t('content.search_videos')} bind:value={searchQuery} oninput={handleSearch} class="search-input" />
 		</div>
 		<select class="filter-select" bind:value={filterCreatedBy} onchange={handleFilterChange}>
-			<option value="">All Creators</option>
+			<option value="">{t('content.all_creators')}</option>
 			{#each moderatorsList as m}<option value={m.id}>{m.username}</option>{/each}
 		</select>
 		<select class="filter-select" bind:value={filterMainSection} onchange={handleFilterChange}>
-			<option value="">All Main Sections</option>
+			<option value="">{t('content.all_sections')}</option>
 			{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 		</select>
-		<div class="count-badge">{totalCount} videos</div>
+		<select class="filter-select" bind:value={filterIsListed} onchange={handleFilterChange}>
+			<option value="">{t('common.all')} ({t('common.is_listed')})</option>
+			<option value="true">{t('common.listed')}</option>
+			<option value="false">{t('common.unlisted')}</option>
+		</select>
+		<div class="count-badge">{totalCount} {t('common.total')}</div>
 	</div>
 
 	{#if error}<div class="alert alert-error">{error}</div>{/if}
 
 	<div class="content-container">
 		{#if isLoading}
-			<div class="state-box"><div class="spinner"></div><span>Loading...</span></div>
+			<div class="state-box"><div class="spinner"></div><span>{t('common.loading')}</span></div>
 		{:else if items.length === 0}
-			<div class="state-box empty-state"><p>No videos found</p></div>
+			<div class="state-box empty-state"><p>{t('content.no_videos')}</p></div>
 		{:else}
 			<div class="content-grid">
 				{#each items as item (item.id)}
@@ -157,7 +165,9 @@
 						</div>
 						<div class="card-body">
 							<h3 class="card-title">{item.metadata?.title || 'Untitled'}</h3>
-							<span class="card-creator">by {item.metadata?.created_by || '?'}</span>
+							<span class="card-creator" style="color: {item.metadata?.is_listed === false ? 'var(--color-danger-400)' : 'inherit'};">
+								{item.metadata?.is_listed === false ? t('common.unlisted') : `by ${item.metadata?.created_by || '?'}`}
+							</span>
 							<div class="card-footer">
 								<span class="card-date">{formatDate(item.metadata?.created_at)}</span>
 								<div class="card-actions">
@@ -178,7 +188,7 @@
 
 	{#if totalPages > 1}
 		<div class="pagination">
-			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← Prev</button>
+			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← {t('common.previous')}</button>
 			<div class="page-numbers">
 				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
 					{#if p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)}
@@ -188,7 +198,7 @@
 					{/if}
 				{/each}
 			</div>
-			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>Next →</button>
+			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>{t('common.next')} →</button>
 		</div>
 	{/if}
 </div>
@@ -205,11 +215,12 @@
 					<div class="video-embed"><iframe src="https://www.youtube.com/embed/{ytId}" title={detailItem.metadata?.title} frameborder="0" allowfullscreen></iframe></div>
 				{/if}
 				<div class="detail-fields">
-					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
-					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
-					<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.youtube_url')}</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
 					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
-					<div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>
 			</div>
 		</div>
@@ -221,15 +232,22 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Edit Video</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.edit_video')}</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
-				<div class="form-group"><label for="edit-url" class="form-label">YouTube URL</label><input type="url" id="edit-url" bind:value={editForm.video_url} class="form-input" required /></div>
-				<div class="form-group"><label for="edit-title" class="form-label">Title</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
-				<div class="form-group"><label for="edit-desc" class="form-label">Description</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group"><label for="edit-url" class="form-label">{t('content.youtube_url')}</label><input type="url" id="edit-url" bind:value={editForm.video_url} class="form-input" required /></div>
+				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
+				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
+				</div>
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>Cancel</button>
-					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}Save</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>{t('common.cancel')}</button>
+					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>{#if editFormLoading}<span class="spinner-sm"></span>{/if}{t('common.save_changes')}</button>
 				</div>
 			</form>
 		</div>
@@ -241,11 +259,11 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Delete Video</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
-			<p class="delete-message">Delete <strong>"{deletingItem.metadata?.title}"</strong>? This cannot be undone.</p>
+			<div class="modal-header"><h2 class="modal-title">{t('content.delete_video')}</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<p class="delete-message">{t('content.delete_video_confirm')} <strong>"{deletingItem.metadata?.title}"</strong>?</p>
 			<div class="modal-actions pad-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
-				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}Delete</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
+				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>{#if deleteLoading}<span class="spinner-sm"></span>{/if}{t('common.delete')}</button>
 			</div>
 		</div>
 	</div>

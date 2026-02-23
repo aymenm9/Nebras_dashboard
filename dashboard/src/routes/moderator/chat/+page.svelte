@@ -2,6 +2,7 @@
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { getAuthState } from '$lib/stores/auth.svelte.js';
 	import { createChatSocket, uploadChatFile } from '$lib/api/chat.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	const authState = getAuthState();
 
@@ -125,18 +126,18 @@
 	let allFilesReady = $derived(pendingFiles.length === 0 || pendingFiles.every(f => f.id || f.error));
 </script>
 
-<svelte:head><title>Chat — Nebras</title></svelte:head>
+<svelte:head><title>{t('chat.title')} — Nebras</title></svelte:head>
 
 <div class="chat-page">
 	<div class="chat-header">
 		<div class="chat-header-left">
-			<h1 class="chat-title">Chat</h1>
+			<h1 class="chat-title">{t('chat.title')}</h1>
 			<span class="chat-status" class:online={isConnected}>
 				<span class="status-dot"></span>
-				{isConnected ? 'Connected' : 'Connecting...'}
+				{isConnected ? t('chat.connected') : t('chat.connecting')}
 			</span>
 		</div>
-		<span class="chat-members">{new Set(messages.map(m => m.username)).size} participants</span>
+		<span class="chat-members">{new Set(messages.map(m => m.username)).size} {t('chat.participants')}</span>
 	</div>
 
 	{#if error}<div class="chat-error">{error}</div>{/if}
@@ -145,7 +146,7 @@
 		{#if messages.length === 0}
 			<div class="empty-chat">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" /></svg>
-				<p>No messages yet. Start the conversation!</p>
+				<p>{t('chat.no_messages_yet')}</p>
 			</div>
 		{:else}
 			{#each messages as msg, idx (msg.id || msg.message_id || idx)}
@@ -207,12 +208,12 @@
 		<input type="file" class="file-input-hidden" multiple bind:this={fileInputEl} onchange={handleFileSelect} />
 		<textarea
 			class="msg-input"
-			placeholder="Type a message..."
+			placeholder={t('chat.type_message')}
 			bind:value={messageText}
 			onkeydown={handleKeydown}
 			rows="1"
 		></textarea>
-		<button class="send-btn" onclick={sendMessage} disabled={(!messageText.trim() && pendingFiles.filter(f => f.id).length === 0) || !isConnected}>
+		<button class="send-btn" aria-label="Send" onclick={sendMessage} disabled={(!messageText.trim() && pendingFiles.filter(f => f.id).length === 0) || !isConnected}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
 		</button>
 	</div>

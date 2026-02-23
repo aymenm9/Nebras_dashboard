@@ -9,6 +9,7 @@
 		listMyYoutubeVideos, createYoutubeVideo, updateYoutubeVideo, removeYoutubeVideo,
 		listMyMainSections, listMySubSections, listMySecondarySections
 	} from '$lib/api/moderator.js';
+	import { t } from '$lib/i18n/store.svelte.js';
 
 	// ─── State ──────────────────────────────────────────
 	let items = $state([]);
@@ -17,6 +18,7 @@
 	let searchQuery = $state('');
 	let filterMainSection = $state('');
 	let filterSubSection = $state('');
+	let filterIsListed = $state('');
 	let isLoading = $state(true);
 	let error = $state('');
 
@@ -27,7 +29,7 @@
 
 	// Create modal
 	let showCreateModal = $state(false);
-	let createForm = $state({ video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '' });
+	let createForm = $state({ video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
 	let createThumbnail = $state(null);
 	let createThumbnailPreview = $state('');
 	let createFormError = $state('');
@@ -38,7 +40,7 @@
 	// Edit modal
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ video_url: '', title: '', description: '' });
+	let editForm = $state({ video_url: '', title: '', description: '', is_listed: true });
 	let editThumbnail = $state(null);
 	let editThumbnailPreview = $state('');
 	let editFormError = $state('');
@@ -72,6 +74,7 @@
 				search: searchQuery,
 				main_section: filterMainSection || undefined,
 				subsection: filterSubSection || undefined,
+				metadata__is_listed: filterIsListed === '' ? undefined : filterIsListed === 'true',
 				page: currentPage
 			});
 			items = data.results;
@@ -132,7 +135,7 @@
 
 	// ─── Create ─────────────────────────────────────────
 	function openCreateModal() {
-		createForm = { video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '' };
+		createForm = { video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
 		createThumbnail = null;
 		createThumbnailPreview = '';
 		createFormError = '';
@@ -180,7 +183,8 @@
 					title: createForm.title,
 					description: createForm.description || undefined,
 					subsection: Number(createForm.subsection),
-					content_type: 'youtube'
+					content_type: 'youtube',
+					is_listed: createForm.is_listed
 				}
 			};
 			if (createForm.secondary_subsection) {
@@ -201,7 +205,8 @@
 		editForm = {
 			video_url: item.video_url || '',
 			title: item.metadata?.title || '',
-			description: item.metadata?.description || ''
+			description: item.metadata?.description || '',
+			is_listed: item.metadata?.is_listed ?? true
 		};
 		editThumbnail = null;
 		editThumbnailPreview = item.metadata?.thumbnail || '';
@@ -225,7 +230,7 @@
 		try {
 			const payload = {
 				video_url: editForm.video_url,
-				metadata: { title: editForm.title, description: editForm.description || undefined }
+				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
 			};
 			if (editThumbnail) payload.thumbnail = editThumbnail;
 			await updateYoutubeVideo(editingItem.id, payload);
@@ -287,44 +292,49 @@
 </script>
 
 <svelte:head>
-	<title>My Content — Nebras</title>
+	<title>{t('content.title')} — Nebras</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
 		<div>
-			<h1 class="page-title">My Content</h1>
-			<p class="page-desc">Manage your YouTube videos and file uploads</p>
+			<h1 class="page-title">{t('content.my_content')}</h1>
+			<p class="page-desc">{t('content.my_content_desc')}</p>
 		</div>
 		<button class="btn btn-primary" onclick={openCreateModal} id="create-content-btn">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M12 5v14m-7-7h14" /></svg>
-			Add YouTube Video
+			{t('content.add_youtube')}
 		</button>
 	</div>
 
 	<!-- Tabs -->
 	<div class="tabs">
-		<a href="/moderator/content/youtube" class="tab active">YouTube Videos</a>
-		<a href="/moderator/content/files" class="tab">File Uploads</a>
+		<a href="/moderator/content/youtube" class="tab active">{t('content.youtube_videos')}</a>
+		<a href="/moderator/content/files" class="tab">{t('content.file_uploads')}</a>
 	</div>
 
 	<!-- Toolbar -->
 	<div class="toolbar">
 		<div class="search-box">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-			<input type="text" placeholder="Search videos..." bind:value={searchQuery} oninput={handleSearch} class="search-input" />
+			<input type="text" placeholder={t('content.search_videos')} bind:value={searchQuery} oninput={handleSearch} class="search-input" />
 		</div>
 		<select class="filter-select" bind:value={filterMainSection} onchange={handleMainFilterChange}>
-			<option value="">All Main Sections</option>
+			<option value="">{t('content.all_main_sections')}</option>
 			{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 		</select>
 		{#if filterMainSection}
 			<select class="filter-select" bind:value={filterSubSection} onchange={handleSubFilterChange}>
-				<option value="">All Sub Sections</option>
+				<option value="">{t('content.all_sub_sections')}</option>
 				{#each subSectionsList as ss}<option value={ss.id}>{ss.name}</option>{/each}
 			</select>
 		{/if}
-		<div class="count-badge">{totalCount} videos</div>
+		<select class="filter-select" bind:value={filterIsListed} onchange={handleFilterChange}>
+			<option value="">{t('common.all')} ({t('common.is_listed')})</option>
+			<option value="true">{t('common.listed')}</option>
+			<option value="false">{t('common.unlisted')}</option>
+		</select>
+		<div class="count-badge">{totalCount} {t('common.total')}</div>
 	</div>
 
 	{#if error}<div class="alert alert-error">{error}</div>{/if}
@@ -332,14 +342,14 @@
 	<!-- Content Grid -->
 	<div class="content-container">
 		{#if isLoading}
-			<div class="state-box"><div class="spinner"></div><span>Loading...</span></div>
+			<div class="state-box"><div class="spinner"></div><span>{t('common.loading')}</span></div>
 		{:else if items.length === 0}
 			<div class="state-box empty-state">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" /></svg>
-				<p>No YouTube videos yet</p>
+				<p>{t('content.no_youtube_yet')}</p>
 				<button class="btn btn-primary btn-sm" onclick={openCreateModal}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><path d="M12 5v14m-7-7h14" /></svg>
-					Add your first video
+					{t('content.add_first_video')}
 				</button>
 			</div>
 		{:else}
@@ -385,7 +395,7 @@
 	<!-- Pagination -->
 	{#if totalPages > 1}
 		<div class="pagination">
-			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← Prev</button>
+			<button class="page-btn" disabled={currentPage === 1} onclick={() => goToPage(currentPage - 1)}>← {t('common.previous')}</button>
 			<div class="page-numbers">
 				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as p}
 					{#if p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)}
@@ -395,7 +405,7 @@
 					{/if}
 				{/each}
 			</div>
-			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>Next →</button>
+			<button class="page-btn" disabled={currentPage === totalPages} onclick={() => goToPage(currentPage + 1)}>{t('common.next')} →</button>
 		</div>
 	{/if}
 </div>
@@ -406,7 +416,7 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal modal-lg animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Video Details</h2>
+				<h2 class="modal-title">{t('content.video_details')}</h2>
 				<button class="modal-close" onclick={() => (showDetailModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
@@ -419,12 +429,13 @@
 					</div>
 				{/if}
 				<div class="detail-fields">
-					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
-					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">Description</span><span class="detail-value desc-val">{detailItem.metadata.description}</span></div>{/if}
-					<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
-					<div class="detail-row"><span class="detail-label">Sub Section</span><span class="detail-value">#{detailItem.metadata?.subsection}</span></div>
-					{#if detailItem.metadata?.secondary_subsection}<div class="detail-row"><span class="detail-label">Secondary</span><span class="detail-value">#{detailItem.metadata.secondary_subsection}</span></div>{/if}
-					<div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value desc-val">{detailItem.metadata.description}</span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('content.url')}</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
+					<div class="detail-row"><span class="detail-label">{t('sections.sub_section')}</span><span class="detail-value">#{detailItem.metadata?.subsection}</span></div>
+					{#if detailItem.metadata?.secondary_subsection}<div class="detail-row"><span class="detail-label">{t('sections.secondary')}</span><span class="detail-value">#{detailItem.metadata.secondary_subsection}</span></div>{/if}
+					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>
 			</div>
 		</div>
@@ -437,7 +448,7 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showCreateModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Add YouTube Video</h2>
+				<h2 class="modal-title">{t('content.add_youtube')}</h2>
 				<button class="modal-close" onclick={() => (showCreateModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
@@ -445,71 +456,78 @@
 			{#if createFormError}<div class="alert alert-error modal-alert">{createFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleCreate(); }} class="modal-form">
 				<div class="form-group">
-					<label for="create-url" class="form-label">YouTube URL *</label>
+					<label for="create-url" class="form-label">{t('content.youtube_url')} *</label>
 					<input type="url" id="create-url" bind:value={createForm.video_url} class="form-input" required placeholder="https://youtube.com/watch?v=..." />
 					{#if extractYoutubeId(createForm.video_url)}
 						<img src="https://img.youtube.com/vi/{extractYoutubeId(createForm.video_url)}/mqdefault.jpg" alt="Preview" class="url-preview" />
 					{/if}
 				</div>
 				<div class="form-group">
-					<label for="create-title" class="form-label">Title *</label>
-					<input type="text" id="create-title" bind:value={createForm.title} class="form-input" required placeholder="Video title" />
+					<label for="create-title" class="form-label">{t('common.title')} *</label>
+					<input type="text" id="create-title" bind:value={createForm.title} class="form-input" required placeholder={t('common.title')} />
 				</div>
 				<div class="form-group">
-					<label for="create-desc" class="form-label">Description</label>
-					<textarea id="create-desc" bind:value={createForm.description} class="form-input form-textarea" rows="3" placeholder="Optional description..."></textarea>
+					<label for="create-desc" class="form-label">{t('content.description')}</label>
+					<textarea id="create-desc" bind:value={createForm.description} class="form-input form-textarea" rows="3" placeholder={t('common.optional')}></textarea>
 				</div>
 				<!-- Section selectors (cascading) -->
 				<div class="form-group">
-					<label for="create-main" class="form-label">Main Section *</label>
+					<label for="create-main" class="form-label">{t('sections.main_section')} *</label>
 					<select id="create-main" bind:value={createForm.main_section} class="form-input" onchange={handleCreateMainChange} required>
-						<option value="">Select main section...</option>
+						<option value="">{t('common.select')}</option>
 						{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 					</select>
 				</div>
 				{#if createForm.main_section}
 					<div class="form-group">
-						<label for="create-sub" class="form-label">Sub Section *</label>
+						<label for="create-sub" class="form-label">{t('sections.sub_section')} *</label>
 						<select id="create-sub" bind:value={createForm.subsection} class="form-input" onchange={handleCreateSubChange} required>
-							<option value="">Select sub section...</option>
+							<option value="">{t('common.select')}</option>
 							{#each createSubOptions as ss}<option value={ss.id}>{ss.name}</option>{/each}
 						</select>
 					</div>
 				{/if}
 				{#if createForm.subsection && createSecondaryOptions.length > 0}
 					<div class="form-group">
-						<label for="create-secondary" class="form-label">Secondary Sub Section</label>
+						<label for="create-secondary" class="form-label">{t('sections.secondary')}</label>
 						<select id="create-secondary" bind:value={createForm.secondary_subsection} class="form-input">
-							<option value="">None (optional)</option>
+							<option value="">{t('common.none')}</option>
 							{#each createSecondaryOptions as sec}<option value={sec.id}>{sec.name}</option>{/each}
 						</select>
 					</div>
 				{/if}
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="create-listed" bind:checked={createForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
+				</div>
 				<!-- Thumbnail -->
 				<div class="form-group">
-					<label class="form-label">Thumbnail</label>
+					<label class="form-label">{t('content.thumbnail')}</label>
 					{#if createThumbnailPreview}
 						<div class="upload-preview">
 							<img src={createThumbnailPreview} alt="Preview" class="preview-img" />
-							<button type="button" class="preview-remove" onclick={() => { createThumbnail = null; createThumbnailPreview = ''; }} title="Remove">
+							<button type="button" class="preview-remove" onclick={() => { createThumbnail = null; createThumbnailPreview = ''; }} title={t('common.remove')}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 							</button>
 						</div>
 					{:else}
 						<label class="upload-zone" for="create-thumb">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" /></svg>
-							<span>Upload thumbnail</span><span class="upload-hint">PNG, JPG, WebP</span>
+							<span>{t('content.upload_thumb')}</span><span class="upload-hint">PNG, JPG, WebP</span>
 						</label>
 						<input type="file" id="create-thumb" accept="image/*" class="file-input-hidden" onchange={handleCreateThumbnailChange} />
 					{/if}
 				</div>
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>Cancel</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>{t('common.cancel')}</button>
 					<button type="submit" class="btn btn-primary" disabled={createFormLoading}>
-						{#if createFormLoading}<span class="spinner-sm"></span>{/if}Create Video
+						{#if createFormLoading}<span class="spinner-sm"></span>{/if}{t('content.create_video')}
 					</button>
 				</div>
-			</form>
+			</form>>
 		</div>
 	</div>
 {/if}
@@ -520,7 +538,7 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Edit Video</h2>
+				<h2 class="modal-title">{t('content.edit_video')}</h2>
 				<button class="modal-close" onclick={() => (showEditModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
@@ -528,40 +546,47 @@
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
 				<div class="form-group">
-					<label for="edit-url" class="form-label">YouTube URL *</label>
+					<label for="edit-url" class="form-label">{t('content.youtube_url')} *</label>
 					<input type="url" id="edit-url" bind:value={editForm.video_url} class="form-input" required />
 				</div>
 				<div class="form-group">
-					<label for="edit-title" class="form-label">Title *</label>
+					<label for="edit-title" class="form-label">{t('common.title')} *</label>
 					<input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required />
 				</div>
 				<div class="form-group">
-					<label for="edit-desc" class="form-label">Description</label>
+					<label for="edit-desc" class="form-label">{t('content.description')}</label>
 					<textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea>
 				</div>
+				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+					<label class="toggle-switch">
+						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
+						<span class="toggle-slider"></span>
+						<span class="toggle-label">{t('common.is_listed')}</span>
+					</label>
+				</div>
 				<div class="form-group">
-					<label class="form-label">Thumbnail</label>
+					<label class="form-label">{t('content.thumbnail')}</label>
 					{#if editThumbnailPreview}
 						<div class="upload-preview">
 							<img src={editThumbnailPreview} alt="Preview" class="preview-img" />
 							<button type="button" class="preview-remove" onclick={() => { editThumbnail = null; editThumbnailPreview = ''; }}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 							</button>
-							<label class="change-thumbnail-btn" for="edit-thumb">Change image</label>
+							<label class="change-thumbnail-btn" for="edit-thumb">{t('content.change_image')}</label>
 							<input type="file" id="edit-thumb" accept="image/*" class="file-input-hidden" onchange={handleEditThumbnailChange} />
 						</div>
 					{:else}
 						<label class="upload-zone" for="edit-thumb-new">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" /></svg>
-							<span>Upload thumbnail</span><span class="upload-hint">PNG, JPG, WebP</span>
+							<span>{t('content.upload_thumb')}</span><span class="upload-hint">PNG, JPG, WebP</span>
 						</label>
 						<input type="file" id="edit-thumb-new" accept="image/*" class="file-input-hidden" onchange={handleEditThumbnailChange} />
 					{/if}
 				</div>
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>Cancel</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showEditModal = false)}>{t('common.cancel')}</button>
 					<button type="submit" class="btn btn-primary" disabled={editFormLoading}>
-						{#if editFormLoading}<span class="spinner-sm"></span>{/if}Save Changes
+						{#if editFormLoading}<span class="spinner-sm"></span>{/if}{t('common.save_changes')}
 					</button>
 				</div>
 			</form>
@@ -575,16 +600,16 @@
 	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">Delete Video</h2>
+				<h2 class="modal-title">{t('content.delete_video')}</h2>
 				<button class="modal-close" onclick={() => (showDeleteModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
-			<p class="delete-message">Are you sure you want to delete <strong>"{deletingItem.metadata?.title}"</strong>? This action cannot be undone.</p>
+			<p class="delete-message">{t('content.delete_video_confirm')} <strong>"{deletingItem.metadata?.title}"</strong>? {t('common.cannot_be_undone')}</p>
 			<div class="modal-actions pad-actions">
-				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>Cancel</button>
+				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
 				<button class="btn btn-danger" onclick={handleDelete} disabled={deleteLoading}>
-					{#if deleteLoading}<span class="spinner-sm"></span>{/if}Delete
+					{#if deleteLoading}<span class="spinner-sm"></span>{/if}{t('common.delete')}
 				</button>
 			</div>
 		</div>
