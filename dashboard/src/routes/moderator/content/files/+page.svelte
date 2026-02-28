@@ -22,7 +22,7 @@
 	// Upload modal
 	let showUploadModal = $state(false);
 	let uploadFile = $state(null);
-	let uploadForm = $state({ title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
+	let uploadForm = $state({ title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
 	let uploadThumbnail = $state(null);
 	let uploadThumbnailPreview = $state('');
 	let uploadFormError = $state('');
@@ -37,7 +37,7 @@
 	// Edit modal
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ title: '', description: '', is_listed: true });
+	let editForm = $state({ title: '', description: '', author: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -100,7 +100,7 @@
 
 	// ─── Upload Modal ───────────────────────────────────
 	function openUploadModal() {
-		uploadFile = null; uploadForm = { title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
+		uploadFile = null; uploadForm = { title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
 		uploadThumbnail = null; uploadThumbnailPreview = ''; uploadFormError = '';
 		uploadSubOptions = []; uploadSecondaryOptions = [];
 		uploadStatus = ''; uploadProgress = 0; currentUploader = null;
@@ -141,6 +141,7 @@
 		const metadata = {
 			title: uploadForm.title,
 			description: uploadForm.description || undefined,
+			author: uploadForm.author || undefined,
 			subsection: Number(uploadForm.subsection),
 			content_type: contentType,
 			is_listed: uploadForm.is_listed
@@ -163,12 +164,13 @@
 	function cancelUpload() {
 		if (currentUploader) currentUploader.abort();
 		showUploadModal = false;
+		fetchItems();
 	}
 
 	// ─── Edit ───────────────────────────────────────────
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
+		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', author: item.metadata?.author || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -176,7 +178,7 @@
 		editFormError = ''; editFormLoading = true;
 		try {
 			await updateFile(editingItem.id, {
-				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
+				metadata: { title: editForm.title, description: editForm.description || undefined, author: editForm.author || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -243,6 +245,7 @@
 	function cancelResume() {
 		if (currentResumeUploader) currentResumeUploader.abort();
 		showResumeModal = false;
+		fetchItems();
 	}
 	function formatDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
 
@@ -312,6 +315,8 @@
 		{:else}
 			<div class="file-list">
 				{#each items as item (item.id)}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div class="file-row" class:file-row-pending={item.upload_status === 'pending'} onclick={() => handleRowClick(item)}>
 						<div class="file-icon">{contentTypeIcon(item.metadata?.content_type)}</div>
 						<div class="file-info">
@@ -322,7 +327,7 @@
 						</div>
 						<span class="file-status {statusColor(item.upload_status)}">{item.upload_status}</span>
 						<span class="file-date">{formatDate(item.metadata?.created_at)}</span>
-						<div class="file-actions" onclick={(e) => e.stopPropagation()}>
+						<div class="file-actions" role="presentation" onclick={(e) => e.stopPropagation()}>
 							<button class="action-btn edit" title="Edit" onclick={() => openEditModal(item)}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
 							</button>
@@ -330,6 +335,12 @@
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
 							</button>
 						</div>
+						{#if item.metadata?.author}
+							<div class="meta-row">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+								<span>{item.metadata.author}</span>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -356,11 +367,11 @@
 <!-- ═══════════════ Upload Modal ═══════════════ -->
 {#if showUploadModal}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget && !uploadStatus) showUploadModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showUploadModal = false)} onclick={(e) => { if (e.target === e.currentTarget && !uploadStatus) showUploadModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.upload_file')}</h2>
-				{#if !uploadStatus}<button class="modal-close" onclick={() => (showUploadModal = false)}>
+				{#if !uploadStatus}<button class="modal-close" aria-label="Close" onclick={() => (showUploadModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>{/if}
 			</div>
@@ -392,7 +403,7 @@
 				<div class="modal-form">
 					<!-- File picker -->
 					<div class="form-group">
-						<label class="form-label">{t('content.file')} *</label>
+						<span class="form-label">{t('content.file')} *</span>
 						{#if uploadFile}
 							<div class="selected-file">
 								<span class="selected-file-name">{uploadFile.name}</span>
@@ -410,6 +421,7 @@
 					</div>
 					<div class="form-group"><label for="up-title" class="form-label">{t('common.title')} *</label><input type="text" id="up-title" bind:value={uploadForm.title} class="form-input" placeholder={t('common.title')} /></div>
 					<div class="form-group"><label for="up-desc" class="form-label">{t('content.description')}</label><textarea id="up-desc" bind:value={uploadForm.description} class="form-input form-textarea" rows="2" placeholder={t('common.optional')}></textarea></div>
+					<div class="form-group"><label for="up-author" class="form-label">{t('content.author')}</label><input type="text" id="up-author" bind:value={uploadForm.author} class="form-input" placeholder="e.g. John Doe..." /></div>
 					<!-- Section selectors -->
 					<div class="form-group">
 						<label for="up-main" class="form-label">{t('sections.main_section')} *</label>
@@ -447,11 +459,11 @@
 
 					<!-- Thumbnail -->
 					<div class="form-group">
-						<label class="form-label">{t('content.thumbnail')}</label>
+						<span class="form-label">{t('content.thumbnail')}</span>
 						{#if uploadThumbnailPreview}
 							<div class="upload-preview">
 								<img src={uploadThumbnailPreview} alt="Preview" class="preview-img" />
-								<button type="button" class="preview-remove" onclick={() => { uploadThumbnail = null; uploadThumbnailPreview = ''; }}>
+								<button type="button" class="preview-remove" aria-label="Remove Thumbnail" onclick={() => { uploadThumbnail = null; uploadThumbnailPreview = ''; }}>
 									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 								</button>
 							</div>
@@ -476,15 +488,21 @@
 <!-- Detail Modal -->
 {#if showDetailModal && detailItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDetailModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">{t('content.file_details')}</h2><button class="modal-close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.file_details')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="detail-content">
 				{#if detailItem.metadata?.thumbnail}
 					<img src={detailItem.metadata.thumbnail} alt="" class="detail-thumb" />
 				{/if}
 				<div class="detail-fields">
 					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.author}
+						<div class="detail-row">
+							<span class="detail-label">{t('content.author')}</span>
+							<span class="detail-value">{detailItem.metadata.author}</span>
+						</div>
+					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.file')}</span><span class="detail-value">{detailItem.filename}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('common.type')}</span><span class="detail-value">{detailItem.file_type}</span></div>
@@ -502,9 +520,9 @@
 <!-- Delete Modal -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">{t('content.delete_file')}</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.delete_file')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<p class="delete-message">{t('content.delete_confirm')} <strong>"{deletingItem.metadata?.title || deletingItem.filename}"</strong>?</p>
 			<div class="modal-actions pad-actions">
 				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>
@@ -517,11 +535,11 @@
 <!-- ═══════════════ Resume Modal ═══════════════ -->
 {#if showResumeModal && resumeItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget && !resumeStatus) showResumeModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (!resumeStatus && (showResumeModal = false))} onclick={(e) => { if (e.target === e.currentTarget && !resumeStatus) showResumeModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.resume_upload')}</h2>
-				{#if !resumeStatus}<button class="modal-close" onclick={() => (showResumeModal = false)}>
+				{#if !resumeStatus}<button class="modal-close" aria-label="Close" onclick={() => (showResumeModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>{/if}
 			</div>
@@ -559,7 +577,7 @@
 					</div>
 
 					<div class="form-group">
-						<label class="form-label">{t('content.reselect_file')} *</label>
+						<span class="form-label">{t('content.reselect_file')} *</span>
 						{#if resumeFile}
 							<div class="selected-file">
 								<span class="selected-file-name">{resumeFile.name}</span>
@@ -593,13 +611,17 @@
 <!-- Edit Modal -->
 {#if showEditModal && editingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">{t('content.edit_file')}</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.edit_file')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
 				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
 				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group">
+					<label for="edit-author" class="form-label">{t('content.author')}</label>
+					<input type="text" id="edit-author" bind:value={editForm.author} class="form-input" placeholder="e.g. John Doe..." />
+				</div>
 				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
 					<label class="toggle-switch">
 						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />

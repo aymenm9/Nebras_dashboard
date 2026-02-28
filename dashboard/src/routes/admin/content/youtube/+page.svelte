@@ -26,7 +26,7 @@
 	// Edit
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ video_url: '', title: '', description: '', is_listed: true });
+	let editForm = $state({ video_url: '', title: '', description: '', author: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -79,7 +79,7 @@
 	// Edit
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { video_url: item.video_url || '', title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
+		editForm = { video_url: item.video_url || '', title: item.metadata?.title || '', description: item.metadata?.description || '', author: item.metadata?.author || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -88,7 +88,7 @@
 		try {
 			await patchAdminYoutubeVideo(editingItem.id, {
 				video_url: editForm.video_url,
-				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
+				metadata: { title: editForm.title, description: editForm.description || undefined, author: editForm.author || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -153,6 +153,8 @@
 				{#each items as item (item.id)}
 					{@const ytId = extractYoutubeId(item.video_url)}
 					<div class="content-card">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div class="card-thumbnail" onclick={() => openDetailModal(item)}>
 							{#if item.metadata?.thumbnail}
 								<img src={item.metadata.thumbnail} alt={item.metadata?.title} class="thumbnail-img" />
@@ -206,9 +208,9 @@
 <!-- Detail Modal -->
 {#if showDetailModal && detailItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDetailModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal modal-lg animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">Video Details</h2><button class="modal-close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">Video Details</h2><button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="detail-content">
 				{#if extractYoutubeId(detailItem.video_url)}
 					{@const ytId = extractYoutubeId(detailItem.video_url)}
@@ -216,6 +218,12 @@
 				{/if}
 				<div class="detail-fields">
 					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.author}
+						<div class="detail-row">
+							<span class="detail-label">{t('content.author')}</span>
+							<span class="detail-value">{detailItem.metadata.author}</span>
+						</div>
+					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.youtube_url')}</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
 					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
@@ -230,14 +238,18 @@
 <!-- Edit Modal -->
 {#if showEditModal && editingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">{t('content.edit_video')}</h2><button class="modal-close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.edit_video')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showEditModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			{#if editFormError}<div class="alert alert-error modal-alert">{editFormError}</div>{/if}
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
 				<div class="form-group"><label for="edit-url" class="form-label">{t('content.youtube_url')}</label><input type="url" id="edit-url" bind:value={editForm.video_url} class="form-input" required /></div>
 				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
 				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group">
+					<label for="edit-author" class="form-label">{t('content.author')}</label>
+					<input type="text" id="edit-author" bind:value={editForm.author} class="form-input" placeholder="e.g. John Doe..." />
+				</div>
 				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
 					<label class="toggle-switch">
 						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
@@ -257,9 +269,9 @@
 <!-- Delete Modal -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">{t('content.delete_video')}</h2><button class="modal-close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.delete_video')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<p class="delete-message">{t('content.delete_video_confirm')} <strong>"{deletingItem.metadata?.title}"</strong>?</p>
 			<div class="modal-actions pad-actions">
 				<button class="btn btn-secondary" onclick={() => (showDeleteModal = false)}>{t('common.cancel')}</button>

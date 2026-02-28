@@ -25,7 +25,7 @@
 	// Edit
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ title: '', description: '', is_listed: true });
+	let editForm = $state({ title: '', description: '', author: '', is_listed: true });
 	let editFormError = $state('');
 	let editFormLoading = $state(false);
 
@@ -74,7 +74,7 @@
 	// Edit
 	function openEditModal(item) {
 		editingItem = item;
-		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', is_listed: item.metadata?.is_listed ?? true };
+		editForm = { title: item.metadata?.title || '', description: item.metadata?.description || '', author: item.metadata?.author || '', is_listed: item.metadata?.is_listed ?? true };
 		editFormError = '';
 		showEditModal = true;
 	}
@@ -82,7 +82,7 @@
 		editFormError = ''; editFormLoading = true;
 		try {
 			await patchAdminFile(editingItem.id, {
-				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
+				metadata: { title: editForm.title, description: editForm.description || undefined, author: editForm.author || undefined, is_listed: editForm.is_listed }
 			});
 			showEditModal = false; fetchItems();
 		} catch (err) { editFormError = err.message; }
@@ -180,8 +180,14 @@
 							<button class="action-btn delete" title="Delete" onclick={() => openDeleteModal(item)}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
 							</button>
+							</div>
+							{#if item.metadata?.author}
+								<div class="meta-row">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+									<span>{item.metadata.author}</span>
+								</div>
+							{/if}
 						</div>
-					</div>
 				{/each}
 			</div>
 		{/if}
@@ -216,6 +222,12 @@
 				{/if}
 				<div class="detail-fields">
 					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.author}
+						<div class="detail-row">
+							<span class="detail-label">{t('content.author')}</span>
+							<span class="detail-value">{detailItem.metadata.author}</span>
+						</div>
+					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.file')}</span><span class="detail-value">{detailItem.filename}</span></div>
 					<div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">{detailItem.file_type}</span></div>
@@ -241,6 +253,10 @@
 			<form onsubmit={(e) => { e.preventDefault(); handleEdit(); }} class="modal-form">
 				<div class="form-group"><label for="edit-title" class="form-label">{t('common.title')}</label><input type="text" id="edit-title" bind:value={editForm.title} class="form-input" required /></div>
 				<div class="form-group"><label for="edit-desc" class="form-label">{t('content.description')}</label><textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea></div>
+				<div class="form-group">
+					<label for="edit-author" class="form-label">{t('content.author')}</label>
+					<input type="text" id="edit-author" bind:value={editForm.author} class="form-input" placeholder="e.g. John Doe..." />
+				</div>
 				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
 					<label class="toggle-switch">
 						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />

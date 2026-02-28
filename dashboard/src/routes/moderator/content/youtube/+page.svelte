@@ -29,7 +29,7 @@
 
 	// Create modal
 	let showCreateModal = $state(false);
-	let createForm = $state({ video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
+	let createForm = $state({ video_url: '', title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
 	let createThumbnail = $state(null);
 	let createThumbnailPreview = $state('');
 	let createFormError = $state('');
@@ -40,7 +40,7 @@
 	// Edit modal
 	let showEditModal = $state(false);
 	let editingItem = $state(null);
-	let editForm = $state({ video_url: '', title: '', description: '', is_listed: true });
+	let editForm = $state({ video_url: '', title: '', description: '', author: '', is_listed: true });
 	let editThumbnail = $state(null);
 	let editThumbnailPreview = $state('');
 	let editFormError = $state('');
@@ -135,7 +135,7 @@
 
 	// ─── Create ─────────────────────────────────────────
 	function openCreateModal() {
-		createForm = { video_url: '', title: '', description: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
+		createForm = { video_url: '', title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
 		createThumbnail = null;
 		createThumbnailPreview = '';
 		createFormError = '';
@@ -182,6 +182,7 @@
 				metadata: {
 					title: createForm.title,
 					description: createForm.description || undefined,
+					author: createForm.author || undefined,
 					subsection: Number(createForm.subsection),
 					content_type: 'youtube',
 					is_listed: createForm.is_listed
@@ -206,6 +207,7 @@
 			video_url: item.video_url || '',
 			title: item.metadata?.title || '',
 			description: item.metadata?.description || '',
+			author: item.metadata?.author || '',
 			is_listed: item.metadata?.is_listed ?? true
 		};
 		editThumbnail = null;
@@ -230,7 +232,7 @@
 		try {
 			const payload = {
 				video_url: editForm.video_url,
-				metadata: { title: editForm.title, description: editForm.description || undefined, is_listed: editForm.is_listed }
+				metadata: { title: editForm.title, description: editForm.description || undefined, author: editForm.author || undefined, is_listed: editForm.is_listed }
 			};
 			if (editThumbnail) payload.thumbnail = editThumbnail;
 			await updateYoutubeVideo(editingItem.id, payload);
@@ -357,6 +359,8 @@
 				{#each items as item (item.id)}
 					{@const ytId = extractYoutubeId(item.video_url)}
 					<div class="content-card">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div class="card-thumbnail" onclick={() => openDetailModal(item)}>
 							{#if item.metadata?.thumbnail}
 								<img src={item.metadata.thumbnail} alt={item.metadata?.title} class="thumbnail-img" />
@@ -385,6 +389,12 @@
 									</button>
 								</div>
 							</div>
+							{#if item.metadata?.author}
+								<div class="meta-row">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+									<span>{item.metadata.author}</span>
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/each}
@@ -413,11 +423,11 @@
 <!-- ═══════════════ Detail Modal ═══════════════ -->
 {#if showDetailModal && detailItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDetailModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal modal-lg animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.video_details')}</h2>
-				<button class="modal-close" onclick={() => (showDetailModal = false)}>
+				<button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -430,6 +440,12 @@
 				{/if}
 				<div class="detail-fields">
 					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					{#if detailItem.metadata?.author}
+						<div class="detail-row">
+							<span class="detail-label">{t('content.author')}</span>
+							<span class="detail-value">{detailItem.metadata.author}</span>
+						</div>
+					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value desc-val">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.url')}</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
 					<div class="detail-row"><span class="detail-label">{t('sections.sub_section')}</span><span class="detail-value">#{detailItem.metadata?.subsection}</span></div>
@@ -445,11 +461,11 @@
 <!-- ═══════════════ Create Modal ═══════════════ -->
 {#if showCreateModal}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showCreateModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showCreateModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showCreateModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.add_youtube')}</h2>
-				<button class="modal-close" onclick={() => (showCreateModal = false)}>
+				<button class="modal-close" aria-label="Close" onclick={() => (showCreateModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -469,6 +485,10 @@
 				<div class="form-group">
 					<label for="create-desc" class="form-label">{t('content.description')}</label>
 					<textarea id="create-desc" bind:value={createForm.description} class="form-input form-textarea" rows="3" placeholder={t('common.optional')}></textarea>
+				</div>
+				<div class="form-group">
+					<label for="create-author" class="form-label">{t('content.author')}</label>
+					<input type="text" id="create-author" bind:value={createForm.author} class="form-input" placeholder="e.g. John Doe..." />
 				</div>
 				<!-- Section selectors (cascading) -->
 				<div class="form-group">
@@ -505,7 +525,7 @@
 				</div>
 				<!-- Thumbnail -->
 				<div class="form-group">
-					<label class="form-label">{t('content.thumbnail')}</label>
+					<span class="form-label">{t('content.thumbnail')}</span>
 					{#if createThumbnailPreview}
 						<div class="upload-preview">
 							<img src={createThumbnailPreview} alt="Preview" class="preview-img" />
@@ -535,11 +555,11 @@
 <!-- ═══════════════ Edit Modal ═══════════════ -->
 {#if showEditModal && editingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showEditModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showEditModal = false; }}>
 		<div class="modal animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.edit_video')}</h2>
-				<button class="modal-close" onclick={() => (showEditModal = false)}>
+				<button class="modal-close" aria-label="Close" onclick={() => (showEditModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
@@ -557,6 +577,10 @@
 					<label for="edit-desc" class="form-label">{t('content.description')}</label>
 					<textarea id="edit-desc" bind:value={editForm.description} class="form-input form-textarea" rows="3"></textarea>
 				</div>
+				<div class="form-group">
+					<label for="edit-author" class="form-label">{t('content.author')}</label>
+					<input type="text" id="edit-author" bind:value={editForm.author} class="form-input" placeholder="e.g. John Doe..." />
+				</div>
 				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
 					<label class="toggle-switch">
 						<input type="checkbox" id="edit-listed" bind:checked={editForm.is_listed} class="toggle-input" />
@@ -565,11 +589,11 @@
 					</label>
 				</div>
 				<div class="form-group">
-					<label class="form-label">{t('content.thumbnail')}</label>
+					<span class="form-label">{t('content.thumbnail')}</span>
 					{#if editThumbnailPreview}
 						<div class="upload-preview">
 							<img src={editThumbnailPreview} alt="Preview" class="preview-img" />
-							<button type="button" class="preview-remove" onclick={() => { editThumbnail = null; editThumbnailPreview = ''; }}>
+							<button type="button" class="preview-remove" aria-label="Remove Thumbnail" onclick={() => { editThumbnail = null; editThumbnailPreview = ''; }}>
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 							</button>
 							<label class="change-thumbnail-btn" for="edit-thumb">{t('content.change_image')}</label>
@@ -597,11 +621,11 @@
 <!-- ═══════════════ Delete Modal ═══════════════ -->
 {#if showDeleteModal && deletingItem}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="modal-overlay" role="dialog" onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
+	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDeleteModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDeleteModal = false; }}>
 		<div class="modal modal-sm animate-fade-in">
 			<div class="modal-header">
 				<h2 class="modal-title">{t('content.delete_video')}</h2>
-				<button class="modal-close" onclick={() => (showDeleteModal = false)}>
+				<button class="modal-close" aria-label="Close" onclick={() => (showDeleteModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
