@@ -226,7 +226,7 @@
 					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.youtube_url')}</span><span class="detail-value"><a href={detailItem.video_url} target="_blank" rel="noopener" class="link">{detailItem.video_url}</a></span></div>
-					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.creator')}</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>

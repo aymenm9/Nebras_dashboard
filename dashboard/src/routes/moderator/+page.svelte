@@ -85,7 +85,7 @@
 		distChart = new Chart(ctx, {
 			type: 'doughnut',
 			data: {
-				labels: [t('common.video'), t('common.audio'), t('common.document'), t('content.youtube')],
+				labels: [t('content.video'), t('content.audio'), t('content.document'), t('content.youtube')],
 				datasets: [{
 					data: [
 						distributionData.video || 0,
@@ -133,9 +133,9 @@
 			youtube: '#ef4444'
 		};
 		const translatedLabels = {
-			video: t('common.video'),
-			audio: t('common.audio'),
-			document: t('common.document'),
+			video: t('content.video'),
+			audio: t('content.audio'),
+			document: t('content.document'),
 			youtube: t('content.youtube')
 		};
 
@@ -191,7 +191,7 @@
 	<div class="page-header">
 		<div>
 			<h1 class="page-title">{t('common.dashboard')}</h1>
-			<p class="page-desc">{t('common.statistics')} Overview</p>
+			<p class="page-desc">{t('moderator.dashboard_desc')}</p>
 		</div>
 	</div>
 
@@ -216,7 +216,7 @@
 			<div class="stat-card">
 				<div class="stat-icon section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
 				<div class="stat-content">
-					<p class="stat-label">Total YouTube Videos</p>
+					<p class="stat-label">{t('common.total')} {t('content.youtube')}</p>
 					<h3 class="stat-value">{totals.total_youtube_videos || 0}</h3>
 				</div>
 			</div>
@@ -252,6 +252,33 @@
 </div>
 
 <style>
+	/* ─── Page Layout ───────────────────────────────── */
+	.page-container {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.page-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.page-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-surface-100);
+		letter-spacing: -0.02em;
+	}
+
+	.page-desc {
+		font-size: 0.8125rem;
+		color: var(--color-surface-400);
+		margin-top: 0.25rem;
+	}
+
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

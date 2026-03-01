@@ -101,7 +101,7 @@
 		distChart = new Chart(ctx, {
 			type: 'doughnut',
 			data: {
-				labels: [t('common.video'), t('common.audio'), t('common.document'), t('content.youtube')],
+				labels: [t('content.video'), t('content.audio'), t('content.document'), t('content.youtube')],
 				datasets: [{
 					data: [
 						distributionData.video || 0,
@@ -185,9 +185,9 @@
 			youtube: '#ef4444'
 		};
 		const translatedLabels = {
-			video: t('common.video'),
-			audio: t('common.audio'),
-			document: t('common.document'),
+			video: t('content.video'),
+			audio: t('content.audio'),
+			document: t('content.document'),
 			youtube: t('content.youtube')
 		};
 
@@ -243,7 +243,7 @@
 	<div class="page-header">
 		<div>
 			<h1 class="page-title">{t('common.dashboard')}</h1>
-			<p class="page-desc">{t('common.statistics')} Overview</p>
+			<p class="page-desc">{t('statistics.desc')}</p>
 		</div>
 	</div>
 
@@ -284,7 +284,7 @@
 			<div class="stat-card">
 				<div class="stat-icon chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round" /></svg></div>
 				<div class="stat-content">
-					<p class="stat-label">Total Chat Queries</p>
+					<p class="stat-label">{t('common.total')} {t('common.chat')}</p>
 					<h3 class="stat-value">{totals.total_chat_queries || 0}</h3>
 				</div>
 			</div>
@@ -306,7 +306,7 @@
 				<div class="top-sections-list">
 					{#if topSectionsData.length === 0}
 						<div class="empty-state">
-							<p>No content in sections yet.</p>
+							<p>{t('content.no_files')}</p>
 						</div>
 					{:else}
 						{#each topSectionsData as section, i}
@@ -351,6 +351,33 @@
 </div>
 
 <style>
+	/* ─── Page Layout ───────────────────────────────── */
+	.page-container {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.page-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.page-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-surface-100);
+		letter-spacing: -0.02em;
+	}
+
+	.page-desc {
+		font-size: 0.8125rem;
+		color: var(--color-surface-400);
+		margin-top: 0.25rem;
+	}
+
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

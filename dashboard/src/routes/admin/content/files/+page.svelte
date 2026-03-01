@@ -181,12 +181,6 @@
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
 							</button>
 							</div>
-							{#if item.metadata?.author}
-								<div class="meta-row">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-									<span>{item.metadata.author}</span>
-								</div>
-							{/if}
 						</div>
 				{/each}
 			</div>
@@ -215,13 +209,13 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showDetailModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showDetailModal = false; }}>
 		<div class="modal animate-fade-in">
-			<div class="modal-header"><h2 class="modal-title">File Details</h2><button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
+			<div class="modal-header"><h2 class="modal-title">{t('content.file_details')}</h2><button class="modal-close" aria-label="Close" onclick={() => (showDetailModal = false)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg></button></div>
 			<div class="detail-content">
 				{#if detailItem.metadata?.thumbnail}
 					<img src={detailItem.metadata.thumbnail} alt="" class="detail-thumb" />
 				{/if}
 				<div class="detail-fields">
-					<div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.title')}</span><span class="detail-value">{detailItem.metadata?.title}</span></div>
 					{#if detailItem.metadata?.author}
 						<div class="detail-row">
 							<span class="detail-label">{t('content.author')}</span>
@@ -230,11 +224,11 @@
 					{/if}
 					{#if detailItem.metadata?.description}<div class="detail-row"><span class="detail-label">{t('content.description')}</span><span class="detail-value">{detailItem.metadata.description}</span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.file')}</span><span class="detail-value">{detailItem.filename}</span></div>
-					<div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">{detailItem.file_type}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('common.type')}</span><span class="detail-value">{detailItem.file_type}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('content.size')}</span><span class="detail-value">{formatFileSize(detailItem.file_size)}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('common.is_listed')}</span><span class="detail-value" style="color: {detailItem.metadata?.is_listed !== false ? 'var(--color-primary-400)' : 'var(--color-danger-400)'};">{detailItem.metadata?.is_listed !== false ? t('common.listed') : t('common.unlisted')}</span></div>
 					<div class="detail-row"><span class="detail-label">{t('content.upload')}</span><span class="detail-value">{detailItem.upload_type} — {detailItem.upload_status}</span></div>
-					<div class="detail-row"><span class="detail-label">Creator</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
+					<div class="detail-row"><span class="detail-label">{t('content.creator')}</span><span class="detail-value">{detailItem.metadata?.created_by || '—'}</span></div>
 					{#if detailItem.file_url}<div class="detail-row"><span class="detail-label">{t('content.url')}</span><span class="detail-value"><a href={detailItem.file_url} target="_blank" rel="noopener" class="link">{t('content.open_file')}</a></span></div>{/if}
 					<div class="detail-row"><span class="detail-label">{t('content.created')}</span><span class="detail-value">{formatDate(detailItem.metadata?.created_at)}</span></div>
 				</div>

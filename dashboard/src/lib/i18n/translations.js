@@ -40,7 +40,15 @@ export const translations = {
             content_distribution: 'Content Distribution',
             top_sections: 'Top Sections',
             registrations: 'Registrations',
-            upload_activity: 'Upload Activity'
+            upload_activity: 'Upload Activity',
+            done: 'Done',
+            close: 'Close',
+            retry: 'Retry',
+            type: 'Type',
+            previous: 'Previous',
+            next: 'Next',
+            cannot_be_undone: 'This action cannot be undone.',
+            remove: 'Remove'
         },
         profile: {
             title: 'My Profile',
@@ -169,6 +177,7 @@ export const translations = {
             change_image: 'Change image',
             delete_video: 'Delete Video',
             delete_video_confirm: 'Are you sure you want to delete',
+            creator: 'Creator'
         },
         sections: {
             title: 'Sections',
@@ -257,7 +266,15 @@ export const translations = {
             content_distribution: 'توزيع المحتوى',
             top_sections: 'أفضل الأقسام',
             registrations: 'التسجيلات',
-            upload_activity: 'نشاط الرفع'
+            upload_activity: 'نشاط الرفع',
+            done: 'إنهاء',
+            close: 'إغلاق',
+            retry: 'إعادة المحاولة',
+            type: 'النوع',
+            previous: 'السابق',
+            next: 'التالي',
+            cannot_be_undone: 'هذا الإجراء لا يمكن التراجع عنه.',
+            remove: 'إزالة'
         },
         profile: {
             title: 'ملفي الشخصي',
@@ -385,7 +402,8 @@ export const translations = {
             edit_video: 'تعديل الفيديو',
             change_image: 'تغيير الصورة',
             delete_video: 'حذف الفيديو',
-            delete_video_confirm: 'هل أنت متأكد من حذف'
+            delete_video_confirm: 'هل أنت متأكد من حذف',
+            creator: 'المنشئ'
         },
         sections: {
             title: 'الأقسام',

@@ -937,6 +937,8 @@
 	}
 
 	.form-input {
+		width: 100%;
+		box-sizing: border-box;
 		padding: 0.625rem 0.75rem;
 		background: var(--color-surface-900);
 		border: 1px solid var(--color-surface-600);
