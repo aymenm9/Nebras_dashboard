@@ -220,7 +220,8 @@
 </div>
 
 <style>
-	.chat-page { display: flex; flex-direction: column; height: calc(100vh - 65px); overflow: hidden; }
+	:global(body) { overscroll-behavior-y: none; }
+	.chat-page { display: flex; flex-direction: column; height: calc(100svh - 130px); overflow: hidden; }
 	.chat-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-surface-700); flex-shrink: 0; }
 	.chat-header-left { display: flex; align-items: center; gap: 1rem; }
 	.chat-title { font-size: 1.25rem; font-weight: 700; color: var(--color-surface-100); }
@@ -289,6 +290,7 @@
 	@keyframes spin { to { transform: rotate(360deg); } }
 
 	@media (max-width: 640px) {
+		.chat-page { height: calc(100svh - 100px - env(safe-area-inset-bottom, 0px)); }
 		.msg { max-width: 90%; }
 		.chat-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 		.msg-image { max-width: 100%; height: auto; }
