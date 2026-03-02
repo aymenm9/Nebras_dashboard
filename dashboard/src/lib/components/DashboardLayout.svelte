@@ -101,6 +101,7 @@
 		min-height: 100vh;
 		background: var(--color-surface-900);
 		transition: margin-inline-start 0.3s ease;
+		min-width: 0;
 	}
 
 	.sidebar-overlay {
@@ -241,11 +242,13 @@
 	/* ─── Main Content ───────────────────────────────── */
 	.main-content {
 		flex: 1;
+		min-width: 0;
 	}
 
 	.content-inner {
 		padding: 1.5rem 2rem;
 		max-width: 1400px;
+		min-width: 0;
 	}
 
 	/* ─── Media Queries (Responsive) ─────────────────── */

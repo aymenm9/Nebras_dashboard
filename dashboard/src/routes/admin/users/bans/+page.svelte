@@ -384,6 +384,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+		min-width: 0;
 	}
 
 	.page-header {
@@ -391,6 +392,7 @@
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.page-title {
@@ -548,6 +550,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		border-bottom: 1px solid var(--color-surface-700);
+		white-space: nowrap;
 	}
 
 	.th-actions {
@@ -559,6 +562,7 @@
 		font-size: 0.8125rem;
 		border-bottom: 1px solid var(--color-surface-700);
 		vertical-align: middle;
+		white-space: nowrap;
 	}
 
 	.data-table tbody tr:last-child td {
