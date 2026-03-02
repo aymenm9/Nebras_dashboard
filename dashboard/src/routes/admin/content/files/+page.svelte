@@ -384,4 +384,18 @@
 	@keyframes spin { to { transform: rotate(360deg); } }
 	:global(.animate-fade-in) { animation: fadeIn 0.15s ease-out; }
 	@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+	@media (max-width: 640px) {
+		.toolbar { flex-direction: column; align-items: stretch; }
+		.search-box, .filter-select { max-width: 100%; width: 100%; }
+		.count-badge { margin-left: 0; align-self: flex-start; }
+		
+		.file-row { flex-wrap: wrap; gap: 0.5rem; }
+		.file-info { min-width: 100%; order: -1; }
+		.file-name { white-space: normal; word-break: break-all; }
+		.file-actions { margin-left: auto; justify-content: flex-end; width: 100%; }
+
+		.detail-row { flex-direction: column; gap: 0.25rem; }
+		.detail-value { text-align: left; }
+	}
 </style>

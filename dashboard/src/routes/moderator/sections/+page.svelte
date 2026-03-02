@@ -1723,4 +1723,15 @@
 	.change-thumbnail-btn:hover {
 		background: var(--color-surface-700);
 	}
+
+	@media (max-width: 640px) {
+		.toolbar { flex-direction: column; align-items: stretch; }
+		.search-box, .filter-select { max-width: 100%; width: 100%; }
+		.count-badge { margin-left: 0; align-self: flex-start; }
+		.sections-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+		.detail-row { flex-direction: column; gap: 0.25rem; }
+		.detail-value { text-align: left; }
+		.level-tabs { flex-wrap: wrap; }
+		.level-tab { flex: 1; justify-content: center; }
+	}
 </style>

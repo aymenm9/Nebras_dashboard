@@ -243,10 +243,11 @@
 				<p>No moderators found</p>
 			</div>
 		{:else}
-			<table class="data-table" id="moderators-table">
-				<thead>
-					<tr>
-						<th>{t('common.users')}</th>
+			<div class="table-responsive">
+				<table class="data-table" id="moderators-table">
+					<thead>
+						<tr>
+							<th>{t('common.users')}</th>
 						<th>{t('profile.email')}</th>
 						<th>{t('common.status')}</th>
 						<th class="th-actions">{t('common.actions')}</th>
@@ -293,6 +294,7 @@
 					{/each}
 				</tbody>
 			</table>
+			</div>
 		{/if}
 	</div>
 
@@ -446,6 +448,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.search-box {
@@ -537,6 +540,12 @@
 		border: 1px solid var(--color-surface-700);
 		border-radius: 14px;
 		overflow: hidden;
+	}
+
+	.table-responsive {
+		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.table-loading,
@@ -987,5 +996,18 @@
 
 	@keyframes spin {
 		to { transform: rotate(360deg); }
+	}
+
+	@media (max-width: 640px) {
+		.toolbar { flex-direction: column; align-items: stretch; }
+		.search-box, .filter-select { max-width: 100%; width: 100%; }
+		.count-badge { margin-left: 0; align-self: flex-start; }
+		.form-row { grid-template-columns: 1fr; }
+		
+		/* Make tables more responsive by adjusting cells */
+		.data-table th, .data-table td { padding: 0.5rem; }
+		.td-actions { padding-right: 0.5rem; }
+		.action-btn { width: 28px; height: 28px; }
+		.user-email, .user-id-badge { display: inline-block; word-break: break-all; }
 	}
 </style>

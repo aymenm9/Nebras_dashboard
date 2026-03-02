@@ -1363,4 +1363,15 @@
 		from { opacity: 0; transform: translateY(8px); }
 		to { opacity: 1; transform: translateY(0); }
 	}
+
+	@media (max-width: 640px) {
+		.toolbar { flex-direction: column; align-items: stretch; }
+		.search-box, .filter-select { max-width: 100%; width: 100%; }
+		.count-badge { margin-left: 0; align-self: flex-start; }
+		.sections-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+		.detail-row { flex-direction: column; gap: 0.25rem; align-items: flex-start; }
+		.detail-value { text-align: left; word-break: break-all; }
+		.level-tabs { flex-wrap: wrap; }
+		.level-tab { flex: 1; justify-content: center; }
+	}
 </style>

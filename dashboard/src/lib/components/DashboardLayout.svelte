@@ -13,15 +13,30 @@
 
 	const authState = getAuthState();
 	let searchQuery = $state('');
+	let isSidebarOpen = $state(false);
 </script>
 
 <div class="dashboard-layout" id="dashboard-layout">
-	<Sidebar />
+	<Sidebar bind:isOpen={isSidebarOpen} />
+
+	<!-- Mobile Sidebar Overlay -->
+	{#if isSidebarOpen}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="sidebar-overlay" onclick={() => isSidebarOpen = false}></div>
+	{/if}
 
 	<div class="main-wrapper">
 		<!-- Top Header Bar -->
 		<header class="top-header" id="top-header">
 			<div class="header-left">
+				<button class="header-icon-btn hamburger-btn" onclick={() => isSidebarOpen = true} title="Open Sidebar">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="3" y1="12" x2="21" y2="12"></line>
+						<line x1="3" y1="6" x2="21" y2="6"></line>
+						<line x1="3" y1="18" x2="21" y2="18"></line>
+					</svg>
+				</button>
 				<div class="search-box">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 						stroke-linecap="round" stroke-linejoin="round" class="search-icon">
@@ -85,6 +100,16 @@
 		flex-direction: column;
 		min-height: 100vh;
 		background: var(--color-surface-900);
+		transition: margin-inline-start 0.3s ease;
+	}
+
+	.sidebar-overlay {
+		display: none;
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 45;
+		backdrop-filter: blur(2px);
 	}
 
 	/* ─── Top Header ─────────────────────────────────── */
@@ -104,6 +129,13 @@
 	.header-left {
 		flex: 1;
 		max-width: 480px;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.hamburger-btn {
+		display: none;
 	}
 
 	.search-box {
@@ -214,5 +246,34 @@
 	.content-inner {
 		padding: 1.5rem 2rem;
 		max-width: 1400px;
+	}
+
+	/* ─── Media Queries (Responsive) ─────────────────── */
+	@media (max-width: 1024px) {
+		.main-wrapper {
+			margin-inline-start: 0;
+		}
+
+		.hamburger-btn {
+			display: flex;
+		}
+
+		.sidebar-overlay {
+			display: block;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.top-header {
+			padding: 0.75rem 1rem;
+		}
+
+		.content-inner {
+			padding: 1rem;
+		}
+
+		.search-box {
+			display: none; /* Optionally hide search box on very small screens, or adjust width */
+		}
 	}
 </style>

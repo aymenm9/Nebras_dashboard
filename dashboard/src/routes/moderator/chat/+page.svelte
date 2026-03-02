@@ -287,4 +287,10 @@
 	.send-btn svg { width: 18px; height: 18px; }
 	.file-input-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
 	@keyframes spin { to { transform: rotate(360deg); } }
+
+	@media (max-width: 640px) {
+		.msg { max-width: 90%; }
+		.chat-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+		.msg-image { max-width: 100%; height: auto; }
+	}
 </style>

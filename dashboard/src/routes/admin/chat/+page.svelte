@@ -208,4 +208,12 @@
 	@keyframes spin { to { transform: rotate(360deg); } }
 	:global(.animate-fade-in) { animation: fadeIn 0.15s ease-out; }
 	@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+	@media (max-width: 640px) {
+		.msg-row { flex-wrap: wrap; }
+		.msg-content { min-width: 100%; order: -1; }
+		.msg-avatar { display: none; }
+		.msg-meta { flex-wrap: wrap; }
+		.action-btn.delete { margin-left: auto; justify-content: flex-end; }
+	}
 </style>

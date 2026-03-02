@@ -10,6 +10,8 @@
 	import { page } from '$app/state';
 	import { t } from '$lib/i18n/store.svelte.js';
 
+	let { isOpen = $bindable(false) } = $props();
+
 	const authState = getAuthState();
 
 	let isAdmin = $derived(authState.user?.is_super_admin === true);
@@ -63,6 +65,12 @@
 		return item.children.some((child) => isActive(child.href));
 	}
 
+	function handleNavClick() {
+		if (window.innerWidth <= 1024) {
+			isOpen = false;
+		}
+	}
+
 	const icons = {
 		dashboard: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
 		stats: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
@@ -75,7 +83,7 @@
 	};
 </script>
 
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar {isOpen ? 'open' : ''}" id="sidebar">
 	<!-- ─── Top: Logo ────────────────────────────── -->
 	<div class="sidebar-top">
 		<a href={viewMode === 'admin' ? '/admin' : '/moderator'} class="app-brand">
@@ -107,6 +115,7 @@
 								href={child.href}
 								class="nav-child-link"
 								class:active={isActive(child.href)}
+								onclick={handleNavClick}
 							>
 								<span class="child-dot"></span>
 								<span>{child.label}</span>
@@ -120,6 +129,7 @@
 					href={item.href}
 					class="nav-link"
 					class:active={isActive(item.href)}
+					onclick={handleNavClick}
 				>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 						stroke-linecap="round" stroke-linejoin="round" class="nav-icon">
@@ -182,6 +192,26 @@
 		display: flex;
 		flex-direction: column;
 		z-index: 50;
+		transition: transform 0.3s ease;
+	}
+
+	/* Mobile styles */
+	@media (max-width: 1024px) {
+		.sidebar {
+			transform: translateX(-100%);
+		}
+
+		/* The default is LTR, so -100% hides it. 
+		   If the layout is RTL (Arabic), maybe it needs different translation, 
+		   but let's use standard -100% or we can rely on logical properties but transform doesn't have logical variants yet without using `html[dir="rtl"]`. 
+		   Let's check if the current project supports RTL. */
+		:global(html[dir='rtl']) .sidebar {
+			transform: translateX(100%);
+		}
+
+		.sidebar.open {
+			transform: translateX(0) !important;
+		}
 	}
 
 	/* ─── Top: Brand ─────────────────────────────── */
