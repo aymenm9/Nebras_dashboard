@@ -54,6 +54,10 @@
 			}
 
 			setLoading(false);
+
+			// Background fetch to ensure profile image and tokens remain perfectly synced
+			fetchMe().catch(() => {});
+
 			return;
 		}
 

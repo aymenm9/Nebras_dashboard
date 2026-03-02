@@ -65,10 +65,8 @@ export async function login(username, password) {
             setRefreshCookie(data.refresh);
         }
 
-        // Store user object in state
-        if (data.user) {
-            setUser(data.user);
-        }
+        // Fetch complete user profile data immediately (including profile_image url)
+        await fetchMe();
 
         return { success: true };
     } catch (err) {
