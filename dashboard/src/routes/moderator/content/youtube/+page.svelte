@@ -127,6 +127,11 @@
 		fetchItems();
 	}
 
+	function handleFilterChange() {
+		currentPage = 1;
+		fetchItems();
+	}
+
 	function goToPage(p) {
 		if (p < 1 || p > totalPages) return;
 		currentPage = p;
