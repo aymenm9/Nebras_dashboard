@@ -150,15 +150,7 @@
 		filterMainSection = '';
 		filterSubSection = '';
 		currentPage = 1;
-		if (activeLevel === 'sub' && mainSectionsList.length === 0) fetchMainSectionsOptions();
-		if (activeLevel === 'secondary') fetchMainSectionsOptions();
-		fetchItems();
-	}
-
-	function handleFilterChange() {
-		currentPage = 1;
-		fetchItems();
-	}
+		items = [];
 
 		if (activeLevel === 'sub') {
 			if (mainSectionsList.length === 0) fetchMainSectionsOptions();
@@ -167,6 +159,11 @@
 			fetchSubSectionsOptions('');
 		}
 
+		fetchItems();
+	}
+
+	function handleFilterChange() {
+		currentPage = 1;
 		fetchItems();
 	}
 
