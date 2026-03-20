@@ -1,11 +1,5 @@
-/**
- * Disable SSR for the entire app.
- *
- * This app is fully client-side (auth via localStorage/cookies, all data
- * fetched in onMount). Running SSR on Vercel causes pages to be rendered
- * on the server with no user/auth state, breaking navigation and hydration.
- *
- * With ssr = false, SvelteKit behaves like a pure SPA on all adapters:
- * every page is rendered in the browser, exactly like npm run dev.
- */
+// Pure SPA mode — no server-side rendering, no pre-rendering.
+// All pages are rendered in the browser only (like npm run dev).
+// Both flags are required together for a true SPA on any host.
 export const ssr = false;
+export const prerender = false;
