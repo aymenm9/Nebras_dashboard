@@ -8,11 +8,19 @@
 	import { getAuthState, toggleViewMode } from '$lib/stores/auth.svelte.js';
 	import { logout } from '$lib/api/auth.js';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { t } from '$lib/i18n/store.svelte.js';
 
 	let { isOpen = $bindable(false) } = $props();
 
 	const authState = getAuthState();
+
+	// Toggle between admin/moderator view AND navigate to the matching root
+	function handleToggleView() {
+		const nextMode = authState.viewMode === 'admin' ? 'moderator' : 'admin';
+		toggleViewMode();
+		goto(nextMode === 'admin' ? '/admin' : '/moderator');
+	}
 
 	let isAdmin = $derived(authState.user?.is_super_admin === true);
 	let viewMode = $derived(authState.viewMode);
@@ -144,7 +152,7 @@
 	<!-- ─── Bottom: Role Toggle + User + Logout ───── -->
 	<div class="sidebar-bottom">
 		{#if isAdmin}
-			<button class="role-toggle" onclick={toggleViewMode}>
+			<button class="role-toggle" onclick={handleToggleView}>
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 					stroke-linecap="round" stroke-linejoin="round" class="toggle-icon">
 					<path d={icons.toggle} />
