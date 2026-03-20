@@ -1,5 +1,5 @@
-// Import the Vercel-specific adapter explicitly
-import adapter from '@sveltejs/adapter-vercel';
+// Import the Netlify-specific adapter
+import adapter from '@sveltejs/adapter-netlify';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,13 +8,10 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// Execute the Vercel adapter to handle the build output.
-		// This translates your SvelteKit file-system routes into 
-		// strict Vercel Serverless Functions and static assets.
-		adapter: adapter({
-			// Leaving this configuration object empty uses Vercel's standard defaults.
-			// You can define specific Edge configurations or regions here if required later.
-		})
+		// Executes the Netlify adapter to handle the build output.
+		// This translates your SvelteKit routes into Netlify Edge Functions 
+		// and static assets, placing them in a 'build' directory by default.
+		adapter: adapter()
 	}
 };
 
