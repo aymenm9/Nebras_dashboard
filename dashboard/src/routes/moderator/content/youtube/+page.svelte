@@ -27,15 +27,25 @@
 	let subSectionsList = $state([]);
 	let secondarySectionsList = $state([]);
 
-	// Create modal
+	// Create modal — batch multi-entry
 	let showCreateModal = $state(false);
-	let createForm = $state({ video_url: '', title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true });
-	let createThumbnail = $state(null);
-	let createThumbnailPreview = $state('');
-	let createFormError = $state('');
-	let createFormLoading = $state(false);
+	// Shared section selectors
+	let batchMainSection = $state('');
+	let batchSubsection = $state('');
+	let batchSecondarySubsection = $state('');
 	let createSubOptions = $state([]);
 	let createSecondaryOptions = $state([]);
+	let batchFormError = $state('');
+	let batchUploadAllLoading = $state(false);
+
+	function makeEntry() {
+		return { id: crypto.randomUUID(), video_url: '', title: '', description: '', author: '', is_listed: true, thumbnail: null, thumbnailPreview: '', status: 'idle', error: '' };
+	}
+	let batchEntries = $state([makeEntry()]);
+
+	let batchIsUploadingAny = $derived(batchEntries.some(e => e.status === 'uploading'));
+	let batchAllDone = $derived(batchEntries.length > 0 && batchEntries.every(e => e.status === 'success'));
+	let batchPendingCount = $derived(batchEntries.filter(e => e.status === 'idle' || e.status === 'error').length);
 
 	// Edit modal
 	let showEditModal = $state(false);
@@ -138,72 +148,106 @@
 		fetchItems();
 	}
 
-	// ─── Create ─────────────────────────────────────────
+	// ─── Create (batch) ─────────────────────────────────
 	function openCreateModal() {
-		createForm = { video_url: '', title: '', description: '', author: '', main_section: '', subsection: '', secondary_subsection: '', is_listed: true };
-		createThumbnail = null;
-		createThumbnailPreview = '';
-		createFormError = '';
+		batchEntries = [makeEntry()];
+		batchMainSection = '';
+		batchSubsection = '';
+		batchSecondarySubsection = '';
 		createSubOptions = [];
 		createSecondaryOptions = [];
+		batchFormError = '';
 		showCreateModal = true;
 		if (mainSectionsList.length === 0) fetchMainSectionsOptions();
 	}
 
 	function handleCreateMainChange() {
-		createForm.subsection = '';
-		createForm.secondary_subsection = '';
+		batchSubsection = '';
+		batchSecondarySubsection = '';
 		createSecondaryOptions = [];
-		if (createForm.main_section) fetchSubOptions(createForm.main_section, 'create');
+		if (batchMainSection) fetchSubOptions(batchMainSection, 'create');
 		else createSubOptions = [];
 	}
 
 	function handleCreateSubChange() {
-		createForm.secondary_subsection = '';
-		if (createForm.subsection) fetchSecondaryOptions(createForm.subsection);
+		batchSecondarySubsection = '';
+		if (batchSubsection) fetchSecondaryOptions(batchSubsection);
 		else createSecondaryOptions = [];
 	}
 
-	function handleCreateThumbnailChange(e) {
+	function addBatchEntry() {
+		batchEntries = [...batchEntries, makeEntry()];
+	}
+
+	function removeBatchEntry(id) {
+		if (batchEntries.length === 1) return;
+		batchEntries = batchEntries.filter(e => e.id !== id);
+	}
+
+	function handleBatchThumbnailChange(id, e) {
 		const file = e.target.files?.[0];
-		if (file) {
-			createThumbnail = file;
-			const r = new FileReader();
-			r.onload = (ev) => { createThumbnailPreview = ev.target.result; };
-			r.readAsDataURL(file);
+		if (!file) return;
+		const r = new FileReader();
+		r.onload = (ev) => {
+			batchEntries = batchEntries.map(entry =>
+				entry.id === id ? { ...entry, thumbnail: file, thumbnailPreview: ev.target.result } : entry
+			);
+		};
+		r.readAsDataURL(file);
+	}
+
+	function clearBatchThumbnail(id) {
+		batchEntries = batchEntries.map(e => e.id === id ? { ...e, thumbnail: null, thumbnailPreview: '' } : e);
+	}
+
+	async function uploadSingleEntry(entry) {
+		batchFormError = '';
+		if (!batchSubsection) { batchFormError = 'Please select a sub section first.'; return false; }
+		if (!entry.video_url) { batchEntries = batchEntries.map(e => e.id === entry.id ? { ...e, error: 'YouTube URL is required.' } : e); return false; }
+		if (!entry.title) { batchEntries = batchEntries.map(e => e.id === entry.id ? { ...e, error: 'Title is required.' } : e); return false; }
+
+		batchEntries = batchEntries.map(e => e.id === entry.id ? { ...e, status: 'uploading', error: '' } : e);
+		try {
+			const payload = {
+				video_url: entry.video_url,
+				metadata: {
+					title: entry.title,
+					description: entry.description || undefined,
+					author: entry.author || undefined,
+					subsection: Number(batchSubsection),
+					content_type: 'youtube',
+					is_listed: entry.is_listed
+				}
+			};
+			if (batchSecondarySubsection) payload.metadata.secondary_subsection = Number(batchSecondarySubsection);
+			if (entry.thumbnail) payload.thumbnail = entry.thumbnail;
+			await createYoutubeVideo(payload);
+			batchEntries = batchEntries.map(e => e.id === entry.id ? { ...e, status: 'success', error: '' } : e);
+			return true;
+		} catch (err) {
+			const msg = parseFormError(err.message);
+			batchEntries = batchEntries.map(e => e.id === entry.id ? { ...e, status: 'error', error: msg } : e);
+			return false;
 		}
 	}
 
-	async function handleCreate() {
-		createFormError = '';
-		if (!createForm.subsection) { createFormError = 'Please select a sub section.'; return; }
-		if (!createForm.video_url) { createFormError = 'Please enter a YouTube URL.'; return; }
-		if (!createForm.title) { createFormError = 'Please enter a title.'; return; }
-
-		createFormLoading = true;
-		try {
-			const payload = {
-				video_url: createForm.video_url,
-				metadata: {
-					title: createForm.title,
-					description: createForm.description || undefined,
-					author: createForm.author || undefined,
-					subsection: Number(createForm.subsection),
-					content_type: 'youtube',
-					is_listed: createForm.is_listed
-				}
-			};
-			if (createForm.secondary_subsection) {
-				payload.metadata.secondary_subsection = Number(createForm.secondary_subsection);
-			}
-			if (createThumbnail) payload.thumbnail = createThumbnail;
-
-			await createYoutubeVideo(payload);
-			showCreateModal = false;
-			fetchItems();
-		} catch (err) { createFormError = parseFormError(err.message); }
-		finally { createFormLoading = false; }
+	async function handleUploadSingle(id) {
+		const entry = batchEntries.find(e => e.id === id);
+		if (!entry || entry.status === 'uploading' || entry.status === 'success') return;
+		const ok = await uploadSingleEntry(entry);
+		if (ok) fetchItems();
 	}
+
+	async function handleUploadAll() {
+		if (!batchSubsection) { batchFormError = 'Please select a sub section first.'; return; }
+		batchUploadAllLoading = true;
+		const pending = batchEntries.filter(e => e.status === 'idle' || e.status === 'error');
+		await Promise.all(pending.map(e => uploadSingleEntry(e)));
+		batchUploadAllLoading = false;
+		fetchItems();
+	}
+
+
 
 	// ─── Edit ───────────────────────────────────────────
 	function openEditModal(item) {
@@ -463,96 +507,153 @@
 	</div>
 {/if}
 
-<!-- ═══════════════ Create Modal ═══════════════ -->
+<!-- ═══════════════ Create Modal (Batch) ═══════════════ -->
 {#if showCreateModal}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" role="dialog" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && (showCreateModal = false)} onclick={(e) => { if (e.target === e.currentTarget) showCreateModal = false; }}>
-		<div class="modal animate-fade-in">
+		<div class="modal modal-batch animate-fade-in">
 			<div class="modal-header">
-				<h2 class="modal-title">{t('content.add_youtube')}</h2>
+				<h2 class="modal-title">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;display:inline;vertical-align:-3px;margin-right:6px;"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					{t('content.add_youtube')} <span class="batch-count-pill">{batchEntries.length}</span>
+				</h2>
 				<button class="modal-close" aria-label="Close" onclick={() => (showCreateModal = false)}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
 				</button>
 			</div>
-			{#if createFormError}<div class="alert alert-error modal-alert">{createFormError}</div>{/if}
-			<form onsubmit={(e) => { e.preventDefault(); handleCreate(); }} class="modal-form">
-				<div class="form-group">
-					<label for="create-url" class="form-label">{t('content.youtube_url')} *</label>
-					<input type="url" id="create-url" bind:value={createForm.video_url} class="form-input" required placeholder="https://youtube.com/watch?v=..." />
-					{#if extractYoutubeId(createForm.video_url)}
-						<img src="https://img.youtube.com/vi/{extractYoutubeId(createForm.video_url)}/mqdefault.jpg" alt="Preview" class="url-preview" />
-					{/if}
-				</div>
-				<div class="form-group">
-					<label for="create-title" class="form-label">{t('common.title')} *</label>
-					<input type="text" id="create-title" bind:value={createForm.title} class="form-input" required placeholder={t('common.title')} />
-				</div>
-				<div class="form-group">
-					<label for="create-desc" class="form-label">{t('content.description')}</label>
-					<textarea id="create-desc" bind:value={createForm.description} class="form-input form-textarea" rows="3" placeholder={t('common.optional')}></textarea>
-				</div>
-				<div class="form-group">
-					<label for="create-author" class="form-label">{t('content.author')}</label>
-					<input type="text" id="create-author" bind:value={createForm.author} class="form-input" placeholder="e.g. John Doe..." />
-				</div>
-				<!-- Section selectors (cascading) -->
-				<div class="form-group">
-					<label for="create-main" class="form-label">{t('sections.main_section')} *</label>
-					<select id="create-main" bind:value={createForm.main_section} class="form-input" onchange={handleCreateMainChange} required>
-						<option value="">{t('common.select')}</option>
+
+			<!-- Shared section selectors -->
+			<div class="batch-sections">
+				<div class="batch-sections-title">Shared Section</div>
+				<div class="batch-sections-row">
+					<select class="form-input" bind:value={batchMainSection} onchange={handleCreateMainChange}>
+						<option value="">{t('sections.main_section')}</option>
 						{#each mainSectionsList as ms}<option value={ms.id}>{ms.name}</option>{/each}
 					</select>
-				</div>
-				{#if createForm.main_section}
-					<div class="form-group">
-						<label for="create-sub" class="form-label">{t('sections.sub_section')} *</label>
-						<select id="create-sub" bind:value={createForm.subsection} class="form-input" onchange={handleCreateSubChange} required>
-							<option value="">{t('common.select')}</option>
+					{#if batchMainSection}
+						<select class="form-input" bind:value={batchSubsection} onchange={handleCreateSubChange}>
+							<option value="">{t('sections.sub_section')}</option>
 							{#each createSubOptions as ss}<option value={ss.id}>{ss.name}</option>{/each}
 						</select>
-					</div>
-				{/if}
-				{#if createForm.subsection && createSecondaryOptions.length > 0}
-					<div class="form-group">
-						<label for="create-secondary" class="form-label">{t('sections.secondary')}</label>
-						<select id="create-secondary" bind:value={createForm.secondary_subsection} class="form-input">
-							<option value="">{t('common.none')}</option>
+					{/if}
+					{#if batchSubsection && createSecondaryOptions.length > 0}
+						<select class="form-input" bind:value={batchSecondarySubsection}>
+							<option value="">{t('sections.secondary')} ({t('common.none')})</option>
 							{#each createSecondaryOptions as sec}<option value={sec.id}>{sec.name}</option>{/each}
 						</select>
-					</div>
-				{/if}
-				<div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
-					<label class="toggle-switch">
-						<input type="checkbox" id="create-listed" bind:checked={createForm.is_listed} class="toggle-input" />
-						<span class="toggle-slider"></span>
-						<span class="toggle-label">{t('common.is_listed')}</span>
-					</label>
-				</div>
-				<!-- Thumbnail -->
-				<div class="form-group">
-					<span class="form-label">{t('content.thumbnail')}</span>
-					{#if createThumbnailPreview}
-						<div class="upload-preview">
-							<img src={createThumbnailPreview} alt="Preview" class="preview-img" />
-							<button type="button" class="preview-remove" onclick={() => { createThumbnail = null; createThumbnailPreview = ''; }} title={t('common.remove')}>
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
-							</button>
-						</div>
-					{:else}
-						<label class="upload-zone" for="create-thumb">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" /></svg>
-							<span>{t('content.upload_thumb')}</span><span class="upload-hint">PNG, JPG, WebP</span>
-						</label>
-						<input type="file" id="create-thumb" accept="image/*" class="file-input-hidden" onchange={handleCreateThumbnailChange} />
 					{/if}
 				</div>
-				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>{t('common.cancel')}</button>
-					<button type="submit" class="btn btn-primary" disabled={createFormLoading}>
-						{#if createFormLoading}<span class="spinner-sm"></span>{/if}{t('content.create_video')}
-					</button>
+				{#if batchFormError}<div class="alert alert-error" style="margin-top:0.5rem;">{batchFormError}</div>{/if}
+			</div>
+
+			<!-- Entries list -->
+			<div class="batch-entries">
+				{#each batchEntries as entry (entry.id)}
+					{@const ytId = extractYoutubeId(entry.video_url)}
+					<div class="batch-entry" class:entry-success={entry.status === 'success'} class:entry-error={entry.status === 'error'}>
+						<!-- Entry header -->
+						<div class="batch-entry-header">
+							<div class="entry-status-badge" class:status-idle={entry.status==='idle'} class:status-uploading={entry.status==='uploading'} class:status-success={entry.status==='success'} class:status-error={entry.status==='error'}>
+								{#if entry.status === 'uploading'}<span class="spinner-sm"></span>{/if}
+								{entry.status === 'idle' ? 'Pending' : entry.status === 'uploading' ? 'Uploading…' : entry.status === 'success' ? '✓ Uploaded' : '✗ Failed'}
+							</div>
+							<div class="entry-header-actions">
+								{#if entry.status !== 'success'}
+									<button type="button" class="btn btn-primary btn-sm" disabled={entry.status==='uploading' || batchIsUploadingAny} onclick={() => handleUploadSingle(entry.id)}>
+										{#if entry.status==='uploading'}<span class="spinner-sm"></span>{/if}
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+										Upload
+									</button>
+								{/if}
+								{#if batchEntries.length > 1 && entry.status !== 'uploading'}
+									<button type="button" class="action-btn delete" title="Remove" onclick={() => removeBatchEntry(entry.id)}>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+									</button>
+								{/if}
+							</div>
+						</div>
+
+						{#if entry.error}
+							<div class="alert alert-error" style="font-size:0.75rem;padding:0.5rem 0.75rem;">{entry.error}</div>
+						{/if}
+
+						<!-- Entry fields -->
+						<fieldset class="entry-fields" disabled={entry.status === 'success' || entry.status === 'uploading'}>
+							<!-- URL + preview -->
+							<div class="entry-url-row">
+								<div class="form-group" style="flex:1">
+									<label class="form-label">{t('content.youtube_url')} *</label>
+									<input type="url" class="form-input" bind:value={entry.video_url} placeholder="https://youtube.com/watch?v=..." />
+								</div>
+								{#if ytId}
+									<img src="https://img.youtube.com/vi/{ytId}/mqdefault.jpg" alt="yt" class="entry-yt-thumb" />
+								{/if}
+							</div>
+							<div class="entry-two-col">
+								<div class="form-group">
+									<label class="form-label">{t('common.title')} *</label>
+									<input type="text" class="form-input" bind:value={entry.title} placeholder={t('common.title')} />
+								</div>
+								<div class="form-group">
+									<label class="form-label">{t('content.author')}</label>
+									<input type="text" class="form-input" bind:value={entry.author} placeholder="e.g. John Doe" />
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="form-label">{t('content.description')}</label>
+								<textarea class="form-input form-textarea" rows="2" bind:value={entry.description} placeholder={t('common.optional')}></textarea>
+							</div>
+							<div class="entry-bottom-row">
+								<!-- Thumbnail -->
+								<div class="entry-thumb-col">
+									{#if entry.thumbnailPreview}
+										<div class="upload-preview entry-preview">
+											<img src={entry.thumbnailPreview} alt="thumb" class="preview-img" />
+											<button type="button" class="preview-remove" onclick={() => clearBatchThumbnail(entry.id)}>
+												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" /></svg>
+											</button>
+										</div>
+									{:else}
+										<label class="upload-zone entry-upload-zone" for="thumb-{entry.id}">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" /></svg>
+											<span style="font-size:0.7rem">{t('content.upload_thumb')}</span>
+										</label>
+										<input type="file" id="thumb-{entry.id}" accept="image/*" class="file-input-hidden" onchange={(e) => handleBatchThumbnailChange(entry.id, e)} />
+									{/if}
+								</div>
+								<!-- is_listed toggle -->
+								<label class="toggle-switch">
+									<input type="checkbox" bind:checked={entry.is_listed} class="toggle-input" />
+									<span class="toggle-slider"></span>
+									<span class="toggle-label">{t('common.is_listed')}</span>
+								</label>
+							</div>
+						</fieldset>
+					</div>
+				{/each}
+			</div>
+
+			<!-- Footer actions -->
+			<div class="batch-footer">
+				<button type="button" class="btn btn-secondary" onclick={addBatchEntry} disabled={batchIsUploadingAny}>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M12 5v14m-7-7h14" /></svg>
+					Add Another
+				</button>
+				<div style="display:flex;gap:0.5rem;align-items:center;">
+					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>Cancel</button>
+					{#if !batchAllDone}
+						<button type="button" class="btn btn-primary" disabled={batchUploadAllLoading || batchIsUploadingAny || batchPendingCount === 0} onclick={handleUploadAll}>
+							{#if batchUploadAllLoading || batchIsUploadingAny}<span class="spinner-sm"></span>{/if}
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+							Upload All ({batchPendingCount})
+						</button>
+					{:else}
+						<button type="button" class="btn btn-primary" onclick={() => (showCreateModal = false)}>
+							✓ All Uploaded — Close
+						</button>
+					{/if}
 				</div>
-			</form>>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -730,6 +831,46 @@
 	.modal { width: 100%; max-width: 520px; background: var(--color-surface-800); border: 1px solid var(--color-surface-700); border-radius: 16px; box-shadow: var(--shadow-elevated); max-height: 90vh; overflow-y: auto; }
 	.modal-sm { max-width: 400px; }
 	.modal-lg { max-width: 640px; }
+	.modal-batch { max-width: 680px; display: flex; flex-direction: column; }
+
+	/* Batch modal sections area */
+	.batch-sections { padding: 1rem 1.5rem; background: var(--color-surface-900); border-bottom: 1px solid var(--color-surface-700); }
+	.batch-sections-title { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-surface-500); margin-bottom: 0.5rem; }
+	.batch-sections-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+	.batch-sections-row .form-input { flex: 1; min-width: 160px; }
+
+	/* Entries list */
+	.batch-entries { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 55vh; }
+
+	/* Single entry card */
+	.batch-entry { border: 1px solid var(--color-surface-700); border-radius: 12px; padding: 1rem; background: var(--color-surface-850, #1a1f2e); display: flex; flex-direction: column; gap: 0.75rem; transition: border-color 0.2s; }
+	.entry-success { border-color: var(--color-primary-700); background: rgba(5,150,105,0.06); }
+	.entry-error { border-color: var(--color-danger-700); background: rgba(244,63,94,0.05); }
+
+	/* Entry header */
+	.batch-entry-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+	.entry-header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+	/* Status badge */
+	.entry-status-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 100px; font-size: 0.6875rem; font-weight: 600; }
+	.status-idle { background: var(--color-surface-700); color: var(--color-surface-400); }
+	.status-uploading { background: rgba(99,102,241,0.15); color: #818cf8; }
+	.status-success { background: rgba(5,150,105,0.15); color: var(--color-primary-400); }
+	.status-error { background: rgba(244,63,94,0.15); color: var(--color-danger-400); }
+
+	.batch-count-pill { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: var(--color-primary-700); color: white; border-radius: 50%; font-size: 0.6875rem; font-weight: 700; vertical-align: middle; }
+
+	/* Entry layout helpers */
+	.entry-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+	.entry-url-row { display: flex; align-items: flex-start; gap: 0.75rem; }
+	.entry-yt-thumb { width: 90px; height: 54px; object-fit: cover; border-radius: 6px; flex-shrink: 0; margin-top: 1.375rem; border: 1px solid var(--color-surface-600); }
+	.entry-bottom-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+	.entry-thumb-col { flex: 1; min-width: 140px; }
+	.entry-preview { max-height: 80px; }
+	.entry-upload-zone { padding: 0.6rem 0.75rem; }
+
+	/* Footer */
+	.batch-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-surface-700); flex-wrap: wrap; }
 	.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--color-surface-700); }
 	.modal-title { font-size: 1.125rem; font-weight: 700; color: var(--color-surface-100); }
 	.modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: transparent; color: var(--color-surface-500); cursor: pointer; transition: all 0.15s; }
