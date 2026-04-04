@@ -48,7 +48,8 @@ export const translations = {
             previous: 'Previous',
             next: 'Next',
             cannot_be_undone: 'This action cannot be undone.',
-            remove: 'Remove'
+            remove: 'Remove',
+            upload: 'Upload'
         },
         profile: {
             title: 'My Profile',
@@ -177,7 +178,15 @@ export const translations = {
             change_image: 'Change image',
             delete_video: 'Delete Video',
             delete_video_confirm: 'Are you sure you want to delete',
-            creator: 'Creator'
+            creator: 'Creator',
+            shared_section: 'Shared Section',
+            add_another: '+ Add Another',
+            upload_all: 'Upload All',
+            all_uploaded_close: '✓ All Uploaded — Close',
+            status_pending: 'Pending',
+            status_uploading: 'Uploading…',
+            status_uploaded: '✓ Uploaded',
+            status_failed: '✗ Failed'
         },
         sections: {
             title: 'Sections',
@@ -274,7 +283,8 @@ export const translations = {
             previous: 'السابق',
             next: 'التالي',
             cannot_be_undone: 'هذا الإجراء لا يمكن التراجع عنه.',
-            remove: 'إزالة'
+            remove: 'إزالة',
+            upload: 'رفع'
         },
         profile: {
             title: 'ملفي الشخصي',
@@ -403,7 +413,15 @@ export const translations = {
             change_image: 'تغيير الصورة',
             delete_video: 'حذف الفيديو',
             delete_video_confirm: 'هل أنت متأكد من حذف',
-            creator: 'المنشئ'
+            creator: 'المنشئ',
+            shared_section: 'القسم المشترك',
+            add_another: '+ إضافة مقطع آخر',
+            upload_all: 'رفع الكل',
+            all_uploaded_close: '✓ تم الرفع — إغلاق',
+            status_pending: 'في الانتظار',
+            status_uploading: 'جاري الرفع…',
+            status_uploaded: '✓ تم الرفع',
+            status_failed: '✗ فشل'
         },
         sections: {
             title: 'الأقسام',

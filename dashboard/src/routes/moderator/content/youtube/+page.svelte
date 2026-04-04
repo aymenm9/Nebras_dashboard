@@ -524,7 +524,7 @@
 
 			<!-- Shared section selectors -->
 			<div class="batch-sections">
-				<div class="batch-sections-title">Shared Section</div>
+				<div class="batch-sections-title">{t('content.shared_section')}</div>
 				<div class="batch-sections-row">
 					<select class="form-input" bind:value={batchMainSection} onchange={handleCreateMainChange}>
 						<option value="">{t('sections.main_section')}</option>
@@ -555,14 +555,14 @@
 						<div class="batch-entry-header">
 							<div class="entry-status-badge" class:status-idle={entry.status==='idle'} class:status-uploading={entry.status==='uploading'} class:status-success={entry.status==='success'} class:status-error={entry.status==='error'}>
 								{#if entry.status === 'uploading'}<span class="spinner-sm"></span>{/if}
-								{entry.status === 'idle' ? 'Pending' : entry.status === 'uploading' ? 'Uploading…' : entry.status === 'success' ? '✓ Uploaded' : '✗ Failed'}
+								{entry.status === 'idle' ? t('content.status_pending') : entry.status === 'uploading' ? t('content.status_uploading') : entry.status === 'success' ? t('content.status_uploaded') : t('content.status_failed')}
 							</div>
 							<div class="entry-header-actions">
 								{#if entry.status !== 'success'}
 									<button type="button" class="btn btn-primary btn-sm" disabled={entry.status==='uploading' || batchIsUploadingAny} onclick={() => handleUploadSingle(entry.id)}>
 										{#if entry.status==='uploading'}<span class="spinner-sm"></span>{/if}
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-										Upload
+										{t('common.upload')}
 									</button>
 								{/if}
 								{#if batchEntries.length > 1 && entry.status !== 'uploading'}
@@ -637,19 +637,19 @@
 			<div class="batch-footer">
 				<button type="button" class="btn btn-secondary" onclick={addBatchEntry} disabled={batchIsUploadingAny}>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M12 5v14m-7-7h14" /></svg>
-					Add Another
+					{t('content.add_another')}
 				</button>
 				<div style="display:flex;gap:0.5rem;align-items:center;">
-					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>Cancel</button>
+					<button type="button" class="btn btn-secondary" onclick={() => (showCreateModal = false)}>{t('common.cancel')}</button>
 					{#if !batchAllDone}
 						<button type="button" class="btn btn-primary" disabled={batchUploadAllLoading || batchIsUploadingAny || batchPendingCount === 0} onclick={handleUploadAll}>
 							{#if batchUploadAllLoading || batchIsUploadingAny}<span class="spinner-sm"></span>{/if}
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-							Upload All ({batchPendingCount})
+							{t('content.upload_all')} ({batchPendingCount})
 						</button>
 					{:else}
 						<button type="button" class="btn btn-primary" onclick={() => (showCreateModal = false)}>
-							✓ All Uploaded — Close
+							{t('content.all_uploaded_close')}
 						</button>
 					{/if}
 				</div>
@@ -843,7 +843,7 @@
 	.batch-entries { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 55vh; }
 
 	/* Single entry card */
-	.batch-entry { border: 1px solid var(--color-surface-700); border-radius: 12px; padding: 1rem; background: var(--color-surface-850, #1a1f2e); display: flex; flex-direction: column; gap: 0.75rem; transition: border-color 0.2s; }
+	.batch-entry { border: 1px solid var(--color-surface-700); border-radius: 12px; padding: 1rem; background: var(--color-surface-900); display: flex; flex-direction: column; gap: 0.75rem; transition: border-color 0.2s; }
 	.entry-success { border-color: var(--color-primary-700); background: rgba(5,150,105,0.06); }
 	.entry-error { border-color: var(--color-danger-700); background: rgba(244,63,94,0.05); }
 
