@@ -827,10 +827,11 @@
 	.status-error { background: rgba(244,63,94,0.15); color: var(--color-danger-400); }
 	.batch-count-pill { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: var(--color-primary-700); color: white; border-radius: 50%; font-size: 0.6875rem; font-weight: 700; vertical-align: middle; }
 	.entry-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-	.entry-bottom-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-	.entry-thumb-col { flex: 1; min-width: 140px; }
+	.entry-bottom-row { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem; }
+	.entry-thumb-col { width: 100%; }
 	.entry-preview { max-height: 80px; }
 	.entry-upload-zone { padding: 0.6rem 0.75rem; }
+	.entry-fields { display: flex; flex-direction: column; gap: 0.875rem; border: none; padding: 0; margin: 0.5rem 0 0; }
 	.entry-progress { display: flex; align-items: center; gap: 0.75rem; }
 	.entry-progress .progress-bar-track { flex: 1; }
 	.batch-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--color-surface-700); flex-wrap: wrap; }
